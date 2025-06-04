@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { usePortfolio, useHoldings } from "@/hooks/usePortfolio";
-import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Area, AreaChart } from "recharts";
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Area, AreaChart } from "recharts";
 
 export default function Portfolio() {
   const { data: portfolio } = usePortfolio(1);
