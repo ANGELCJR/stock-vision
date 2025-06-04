@@ -4,11 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useStockSearch } from "@/hooks/useMarketData";
 import { useDebounce } from "@/hooks/use-mobile";
+import { Link, useLocation } from "wouter";
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebounce(searchQuery, 300);
   const { data: searchResults = [] } = useStockSearch(debouncedQuery);
+  const [location] = useLocation();
 
   const handleExport = () => {
     // Create CSV export functionality
@@ -37,18 +39,26 @@ export default function Header() {
               <h1 className="text-xl font-bold">StockVision Pro</h1>
             </div>
             <nav className="hidden md:flex space-x-6 ml-8">
-              <a href="#" className="text-blue-400 border-b-2 border-blue-400 pb-4 px-1">
+              <Link href="/" className={`pb-4 px-1 transition-colors ${
+                location === "/" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-300 hover:text-white"
+              }`}>
                 Dashboard
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white pb-4 px-1 transition-colors">
+              </Link>
+              <Link href="/portfolio" className={`pb-4 px-1 transition-colors ${
+                location === "/portfolio" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-300 hover:text-white"
+              }`}>
                 Portfolio
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white pb-4 px-1 transition-colors">
+              </Link>
+              <Link href="/analytics" className={`pb-4 px-1 transition-colors ${
+                location === "/analytics" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-300 hover:text-white"
+              }`}>
                 Analytics
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white pb-4 px-1 transition-colors">
+              </Link>
+              <Link href="/news" className={`pb-4 px-1 transition-colors ${
+                location === "/news" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-300 hover:text-white"
+              }`}>
                 News
-              </a>
+              </Link>
             </nav>
           </div>
           
@@ -84,9 +94,9 @@ export default function Header() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <Link href="/profile" className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center hover:from-blue-600 hover:to-purple-700 transition-colors cursor-pointer">
               <User className="h-4 w-4 text-white" />
-            </div>
+            </Link>
           </div>
         </div>
       </div>
