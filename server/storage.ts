@@ -7,6 +7,8 @@ import {
   type AIInsight, type InsertAIInsight,
   type MarketNews, type InsertMarketNews
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -44,350 +46,259 @@ export interface IStorage {
   createMarketNews(news: InsertMarketNews): Promise<MarketNews>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private portfolios: Map<number, Portfolio>;
-  private holdings: Map<number, Holding>;
-  private stockPrices: Map<string, StockPrice>;
-  private aiInsights: Map<number, AIInsight>;
-  private marketNews: Map<number, MarketNews>;
-  private currentId: number;
-
+export class DatabaseStorage implements IStorage {
   constructor() {
-    this.users = new Map();
-    this.portfolios = new Map();
-    this.holdings = new Map();
-    this.stockPrices = new Map();
-    this.aiInsights = new Map();
-    this.marketNews = new Map();
-    this.currentId = 1;
-
-    // Initialize with sample data
+    // Initialize with sample data on first run
     this.initializeDefaultData();
   }
 
-  private initializeDefaultData() {
-    // Create default user
-    const defaultUser: User = {
-      id: 1,
-      username: "demo",
-      password: "demo123"
-    };
-    this.users.set(1, defaultUser);
+  private async initializeDefaultData() {
+    try {
+      // Check if data already exists
+      const existingUser = await db.select().from(users).limit(1);
+      if (existingUser.length > 0) return;
 
-    // Create default portfolio
-    const defaultPortfolio: Portfolio = {
-      id: 1,
-      userId: 1,
-      name: "Main Portfolio",
-      totalValue: "127845.32",
-      totalGainLoss: "18945.78",
-      riskScore: "6.7",
-      createdAt: new Date()
-    };
-    this.portfolios.set(1, defaultPortfolio);
+      // Create default user
+      const [defaultUser] = await db.insert(users).values({
+        username: "demo",
+        password: "demo123"
+      }).returning();
 
-    // Create sample holdings
-    const sampleHoldings = [
-      {
-        portfolioId: 1,
-        symbol: "AAPL",
-        name: "Apple Inc.",
-        shares: "50.0000",
-        avgPrice: "155.20",
-        currentPrice: "178.91",
-        totalValue: "8945.50",
-        gainLoss: "1185.50",
-        gainLossPercent: "15.27"
-      },
-      {
-        portfolioId: 1,
-        symbol: "NVDA", 
-        name: "NVIDIA Corporation",
-        shares: "25.0000",
-        avgPrice: "750.45",
-        currentPrice: "891.23",
-        totalValue: "22280.75",
-        gainLoss: "3519.50",
-        gainLossPercent: "18.75"
-      },
-      {
-        portfolioId: 1,
-        symbol: "TSLA",
-        name: "Tesla, Inc.",
-        shares: "15.0000",
-        avgPrice: "265.30",
-        currentPrice: "243.84",
-        totalValue: "3657.60",
-        gainLoss: "-321.90",
-        gainLossPercent: "-8.09"
-      },
-      {
-        portfolioId: 1,
-        symbol: "GOOGL",
-        name: "Alphabet Inc.",
-        shares: "30.0000",
-        avgPrice: "132.80",
-        currentPrice: "139.47",
-        totalValue: "4184.10",
-        gainLoss: "200.10",
-        gainLossPercent: "5.02"
-      },
-      {
-        portfolioId: 1,
-        symbol: "MSFT",
-        name: "Microsoft Corporation",
-        shares: "20.0000",
-        avgPrice: "398.60",
-        currentPrice: "415.23",
-        totalValue: "8304.60",
-        gainLoss: "332.60",
-        gainLossPercent: "4.17"
-      }
-    ];
+      // Create default portfolio
+      const [defaultPortfolio] = await db.insert(portfolios).values({
+        userId: defaultUser.id,
+        name: "Main Portfolio",
+        totalValue: "127845.32",
+        totalGainLoss: "18945.78",
+        riskScore: "6.7"
+      }).returning();
 
-    sampleHoldings.forEach((holding, index) => {
-      const id = index + 2;
-      this.holdings.set(id, {
-        id,
-        ...holding,
-        updatedAt: new Date()
-      });
-    });
+      // Create sample holdings
+      const sampleHoldings = [
+        {
+          portfolioId: defaultPortfolio.id,
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          shares: "50.0000",
+          avgPrice: "155.20"
+        },
+        {
+          portfolioId: defaultPortfolio.id,
+          symbol: "NVDA",
+          name: "NVIDIA Corporation", 
+          shares: "25.0000",
+          avgPrice: "750.45"
+        },
+        {
+          portfolioId: defaultPortfolio.id,
+          symbol: "TSLA",
+          name: "Tesla, Inc.",
+          shares: "15.0000",
+          avgPrice: "265.30"
+        },
+        {
+          portfolioId: defaultPortfolio.id,
+          symbol: "GOOGL",
+          name: "Alphabet Inc.",
+          shares: "30.0000",
+          avgPrice: "132.80"
+        },
+        {
+          portfolioId: defaultPortfolio.id,
+          symbol: "MSFT",
+          name: "Microsoft Corporation",
+          shares: "20.0000",
+          avgPrice: "398.60"
+        }
+      ];
 
-    // Create sample market news
-    const sampleNews = [
-      {
-        title: "NVIDIA Reports Record Q4 Earnings, Beats Expectations",
-        summary: "Strong AI chip demand drives revenue growth of 45% year-over-year, with data center revenue reaching new highs.",
-        sentiment: "bullish" as const,
-        relevantSymbols: ["NVDA", "AMD"],
-        source: "MarketWatch",
-        url: "https://example.com/nvidia-earnings",
-        publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
-      },
-      {
-        title: "Apple Announces New AI Features for iPhone",
-        summary: "Tech giant reveals comprehensive AI integration across iOS ecosystem, potentially boosting hardware sales.",
-        sentiment: "bullish" as const,
-        relevantSymbols: ["AAPL"],
-        source: "TechCrunch", 
-        url: "https://example.com/apple-ai-features",
-        publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000)
-      },
-      {
-        title: "Tesla Faces Production Challenges in Q4",
-        summary: "Electric vehicle manufacturer reports lower than expected delivery numbers amid supply chain constraints.",
-        sentiment: "bearish" as const,
-        relevantSymbols: ["TSLA"],
-        source: "Reuters",
-        url: "https://example.com/tesla-production",
-        publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
-      },
-      {
-        title: "Microsoft Cloud Revenue Surges 25% in Latest Quarter",
-        summary: "Azure and productivity software drive strong quarterly performance, exceeding analyst expectations.",
-        sentiment: "bullish" as const,
-        relevantSymbols: ["MSFT"],
-        source: "CNBC",
-        url: "https://example.com/microsoft-cloud",
-        publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000)
-      },
-      {
-        title: "Alphabet Reports Strong Search and Cloud Growth",
-        summary: "Google parent company shows resilient performance across key business segments despite market headwinds.",
-        sentiment: "bullish" as const,
-        relevantSymbols: ["GOOGL"],
-        source: "Bloomberg",
-        url: "https://example.com/alphabet-earnings",
-        publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-      }
-    ];
+      await db.insert(holdings).values(sampleHoldings);
 
-    sampleNews.forEach((news, index) => {
-      const id = index + 10;
-      this.marketNews.set(id, {
-        id,
-        ...news,
-        createdAt: new Date()
-      });
-    });
+      // Create sample market news
+      const sampleNews = [
+        {
+          title: "NVIDIA Reports Record Q4 Earnings, Beats Expectations",
+          summary: "Strong AI chip demand drives revenue growth of 45% year-over-year, with data center revenue reaching new highs.",
+          sentiment: "bullish" as const,
+          relevantSymbols: ["NVDA", "AMD"],
+          source: "MarketWatch",
+          url: "https://example.com/nvidia-earnings",
+          publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+        },
+        {
+          title: "Apple Announces New AI Features for iPhone",
+          summary: "Tech giant reveals comprehensive AI integration across iOS ecosystem, potentially boosting hardware sales.",
+          sentiment: "bullish" as const,
+          relevantSymbols: ["AAPL"],
+          source: "TechCrunch",
+          url: "https://example.com/apple-ai-features",
+          publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000)
+        },
+        {
+          title: "Tesla Faces Production Challenges in Q4",
+          summary: "Electric vehicle manufacturer reports lower than expected delivery numbers amid supply chain constraints.",
+          sentiment: "bearish" as const,
+          relevantSymbols: ["TSLA"],
+          source: "Reuters",
+          url: "https://example.com/tesla-production",
+          publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
+        },
+        {
+          title: "Microsoft Cloud Revenue Surges 25% in Latest Quarter",
+          summary: "Azure and productivity software drive strong quarterly performance, exceeding analyst expectations.",
+          sentiment: "bullish" as const,
+          relevantSymbols: ["MSFT"],
+          source: "CNBC",
+          url: "https://example.com/microsoft-cloud",
+          publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000)
+        },
+        {
+          title: "Alphabet Reports Strong Search and Cloud Growth",
+          summary: "Google parent company shows resilient performance across key business segments despite market headwinds.",
+          sentiment: "bullish" as const,
+          relevantSymbols: ["GOOGL"],
+          source: "Bloomberg",
+          url: "https://example.com/alphabet-earnings",
+          publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
+        }
+      ];
 
-    // Create sample AI insights
-    const sampleInsights = [
-      {
-        portfolioId: 1,
-        type: "opportunity" as const,
-        title: "Sector Diversification Opportunity",
-        description: "Your portfolio is heavily weighted in technology (68%). Consider adding healthcare, energy, or financial sector exposure to reduce concentration risk.",
-        confidence: "0.87"
-      },
-      {
-        portfolioId: 1,
-        type: "risk" as const,
-        title: "High Concentration Risk Detected",
-        description: "NVIDIA represents 31% of your portfolio value. Consider rebalancing to limit single-stock exposure to 15-20% maximum.",
-        confidence: "0.92"
-      },
-      {
-        portfolioId: 1,
-        type: "trend" as const,
-        title: "AI Sector Momentum Continues",
-        description: "Your AI-focused holdings (NVDA, AAPL, GOOGL) are benefiting from strong sector tailwinds. Monitor for profit-taking opportunities.",
-        confidence: "0.84"
-      }
-    ];
+      await db.insert(marketNews).values(sampleNews);
 
-    sampleInsights.forEach((insight, index) => {
-      const id = index + 20;
-      this.aiInsights.set(id, {
-        id,
-        ...insight,
-        createdAt: new Date()
-      });
-    });
+      // Create sample AI insights
+      const sampleInsights = [
+        {
+          portfolioId: defaultPortfolio.id,
+          type: "opportunity" as const,
+          title: "Sector Diversification Opportunity",
+          description: "Your portfolio is heavily weighted in technology (68%). Consider adding healthcare, energy, or financial sector exposure to reduce concentration risk.",
+          confidence: "0.87"
+        },
+        {
+          portfolioId: defaultPortfolio.id,
+          type: "risk" as const,
+          title: "High Concentration Risk Detected",
+          description: "NVIDIA represents 31% of your portfolio value. Consider rebalancing to limit single-stock exposure to 15-20% maximum.",
+          confidence: "0.92"
+        },
+        {
+          portfolioId: defaultPortfolio.id,
+          type: "trend" as const,
+          title: "AI Sector Momentum Continues",
+          description: "Your AI-focused holdings (NVDA, AAPL, GOOGL) are benefiting from strong sector tailwinds. Monitor for profit-taking opportunities.",
+          confidence: "0.84"
+        }
+      ];
 
-    this.currentId = 30;
+      await db.insert(aiInsights).values(sampleInsights);
+    } catch (error) {
+      console.error("Error initializing default data:", error);
+    }
   }
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   // Portfolio operations
   async getPortfoliosByUserId(userId: number): Promise<Portfolio[]> {
-    return Array.from(this.portfolios.values()).filter(p => p.userId === userId);
+    return await db.select().from(portfolios).where(eq(portfolios.userId, userId));
   }
 
   async getPortfolio(id: number): Promise<Portfolio | undefined> {
-    return this.portfolios.get(id);
+    const [portfolio] = await db.select().from(portfolios).where(eq(portfolios.id, id));
+    return portfolio || undefined;
   }
 
   async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
-    const id = this.currentId++;
-    const portfolio: Portfolio = {
-      ...insertPortfolio,
-      id,
-      totalValue: "0",
-      totalGainLoss: "0",
-      riskScore: "0",
-      createdAt: new Date()
-    };
-    this.portfolios.set(id, portfolio);
+    const [portfolio] = await db.insert(portfolios).values(insertPortfolio).returning();
     return portfolio;
   }
 
   async updatePortfolio(id: number, updates: Partial<Portfolio>): Promise<Portfolio | undefined> {
-    const portfolio = this.portfolios.get(id);
-    if (!portfolio) return undefined;
-    
-    const updated = { ...portfolio, ...updates };
-    this.portfolios.set(id, updated);
-    return updated;
+    const [portfolio] = await db.update(portfolios)
+      .set(updates)
+      .where(eq(portfolios.id, id))
+      .returning();
+    return portfolio || undefined;
   }
 
   // Holdings operations
   async getHoldingsByPortfolioId(portfolioId: number): Promise<Holding[]> {
-    return Array.from(this.holdings.values()).filter(h => h.portfolioId === portfolioId);
+    return await db.select().from(holdings).where(eq(holdings.portfolioId, portfolioId));
   }
 
   async getHolding(id: number): Promise<Holding | undefined> {
-    return this.holdings.get(id);
+    const [holding] = await db.select().from(holdings).where(eq(holdings.id, id));
+    return holding || undefined;
   }
 
   async createHolding(insertHolding: InsertHolding): Promise<Holding> {
-    const id = this.currentId++;
-    const holding: Holding = {
-      ...insertHolding,
-      id,
-      currentPrice: "0",
-      totalValue: "0",
-      gainLoss: "0",
-      gainLossPercent: "0",
-      updatedAt: new Date()
-    };
-    this.holdings.set(id, holding);
+    const [holding] = await db.insert(holdings).values(insertHolding).returning();
     return holding;
   }
 
   async updateHolding(id: number, updates: Partial<Holding>): Promise<Holding | undefined> {
-    const holding = this.holdings.get(id);
-    if (!holding) return undefined;
-    
-    const updated = { ...holding, ...updates, updatedAt: new Date() };
-    this.holdings.set(id, updated);
-    return updated;
+    const [holding] = await db.update(holdings)
+      .set(updates)
+      .where(eq(holdings.id, id))
+      .returning();
+    return holding || undefined;
   }
 
   async deleteHolding(id: number): Promise<boolean> {
-    return this.holdings.delete(id);
+    const result = await db.delete(holdings).where(eq(holdings.id, id));
+    return result.rowCount > 0;
   }
 
   // Stock price operations
   async getStockPrice(symbol: string): Promise<StockPrice | undefined> {
-    return this.stockPrices.get(symbol);
+    const [stockPrice] = await db.select().from(stockPrices).where(eq(stockPrices.symbol, symbol));
+    return stockPrice || undefined;
   }
 
   async getLatestStockPrices(symbols: string[]): Promise<StockPrice[]> {
-    return symbols.map(symbol => this.stockPrices.get(symbol)).filter(Boolean) as StockPrice[];
+    if (symbols.length === 0) return [];
+    return await db.select().from(stockPrices);
   }
 
   async createStockPrice(insertStockPrice: InsertStockPrice): Promise<StockPrice> {
-    const id = this.currentId++;
-    const stockPrice: StockPrice = {
-      ...insertStockPrice,
-      id,
-      volume: insertStockPrice.volume || 0,
-      timestamp: new Date()
-    };
-    this.stockPrices.set(insertStockPrice.symbol, stockPrice);
+    const [stockPrice] = await db.insert(stockPrices).values(insertStockPrice).returning();
     return stockPrice;
   }
 
   async updateStockPrice(symbol: string, updates: Partial<StockPrice>): Promise<StockPrice | undefined> {
-    const stockPrice = this.stockPrices.get(symbol);
-    if (!stockPrice) return undefined;
-    
-    const updated = { ...stockPrice, ...updates, timestamp: new Date() };
-    this.stockPrices.set(symbol, updated);
-    return updated;
+    const [stockPrice] = await db.update(stockPrices)
+      .set(updates)
+      .where(eq(stockPrices.symbol, symbol))
+      .returning();
+    return stockPrice || undefined;
   }
 
   // AI insights operations
   async getAIInsightsByPortfolioId(portfolioId: number): Promise<AIInsight[]> {
-    return Array.from(this.aiInsights.values())
-      .filter(insight => insight.portfolioId === portfolioId)
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return await db.select().from(aiInsights).where(eq(aiInsights.portfolioId, portfolioId));
   }
 
   async createAIInsight(insertInsight: InsertAIInsight): Promise<AIInsight> {
-    const id = this.currentId++;
-    const insight: AIInsight = {
-      ...insertInsight,
-      id,
-      createdAt: new Date()
-    };
-    this.aiInsights.set(id, insight);
+    const [insight] = await db.insert(aiInsights).values(insertInsight).returning();
     return insight;
   }
 
   async deleteOldAIInsights(portfolioId: number): Promise<void> {
-    const insights = Array.from(this.aiInsights.values())
-      .filter(insight => insight.portfolioId === portfolioId);
-    
-    insights.forEach(insight => this.aiInsights.delete(insight.id));
+    await db.delete(aiInsights).where(eq(aiInsights.portfolioId, portfolioId));
   }
 
   // Market news operations
