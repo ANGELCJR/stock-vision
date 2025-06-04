@@ -260,7 +260,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHolding(id: number): Promise<boolean> {
     const result = await db.delete(holdings).where(eq(holdings.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Stock price operations
@@ -303,34 +303,17 @@ export class DatabaseStorage implements IStorage {
 
   // Market news operations
   async getLatestMarketNews(limit: number = 10): Promise<MarketNews[]> {
-    return Array.from(this.marketNews.values())
-      .sort((a, b) => (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0))
-      .slice(0, limit);
+    return await db.select().from(marketNews).limit(limit);
   }
 
   async getMarketNewsBySymbols(symbols: string[], limit: number = 10): Promise<MarketNews[]> {
-    return Array.from(this.marketNews.values())
-      .filter(news => news.relevantSymbols?.some(symbol => symbols.includes(symbol)))
-      .sort((a, b) => (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0))
-      .slice(0, limit);
+    return await db.select().from(marketNews).limit(limit);
   }
 
   async createMarketNews(insertNews: InsertMarketNews): Promise<MarketNews> {
-    const id = this.currentId++;
-    const news: MarketNews = {
-      id,
-      title: insertNews.title,
-      summary: insertNews.summary,
-      sentiment: insertNews.sentiment,
-      relevantSymbols: insertNews.relevantSymbols || null,
-      source: insertNews.source,
-      url: insertNews.url,
-      publishedAt: insertNews.publishedAt,
-      createdAt: new Date()
-    };
-    this.marketNews.set(id, news);
+    const [news] = await db.insert(marketNews).values(insertNews).returning();
     return news;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
