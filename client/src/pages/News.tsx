@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useMarketNews } from "@/hooks/useAIInsights";
+import { useMarketNews } from "@/hooks/useMarketNews";
 import { useHoldings } from "@/hooks/usePortfolio";
 
 export default function News() {

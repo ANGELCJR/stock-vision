@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { getStockData, getHistoricalData } from "./services/financialData";
-import { generateAIInsights } from "./services/openai";
+
 import { fetchMarketNews } from "./services/newsService";
 import { insertHoldingSchema, insertPortfolioSchema } from "@shared/schema";
 
@@ -183,50 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI insights routes
-  app.get("/api/portfolios/:id/insights", async (req, res) => {
-    try {
-      const portfolioId = parseInt(req.params.id);
-      const insights = await storage.getAIInsightsByPortfolioId(portfolioId);
-      res.json(insights);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch AI insights" });
-    }
-  });
 
-  app.post("/api/portfolios/:id/insights/generate", async (req, res) => {
-    try {
-      const portfolioId = parseInt(req.params.id);
-      const portfolio = await storage.getPortfolio(portfolioId);
-      const holdings = await storage.getHoldingsByPortfolioId(portfolioId);
-      
-      if (!portfolio) {
-        return res.status(404).json({ error: "Portfolio not found" });
-      }
-
-      // Delete old insights
-      await storage.deleteOldAIInsights(portfolioId);
-
-      // Generate new insights
-      const insights = await generateAIInsights(portfolio, holdings);
-      
-      // Store insights
-      const storedInsights = await Promise.all(
-        insights.map(insight => storage.createAIInsight({
-          portfolioId,
-          type: insight.type,
-          title: insight.title,
-          description: insight.description,
-          confidence: insight.confidence.toString()
-        }))
-      );
-
-      res.json(storedInsights);
-    } catch (error) {
-      console.error("Error generating AI insights:", error);
-      res.status(500).json({ error: "Failed to generate AI insights" });
-    }
-  });
 
   // Market news routes
   app.get("/api/news", async (req, res) => {
