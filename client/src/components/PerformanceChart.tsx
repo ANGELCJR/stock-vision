@@ -113,7 +113,7 @@ export default function PerformanceChart({ portfolioId }: PerformanceChartProps)
                   borderRadius: '8px',
                   color: '#F9FAFB'
                 }}
-                formatter={[formatTooltipValue, 'Portfolio Value']}
+                formatter={(value: any) => [formatTooltipValue(value), 'Portfolio Value']}
                 labelFormatter={(label) => new Date(label).toLocaleString()}
               />
               <Area

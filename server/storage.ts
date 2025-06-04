@@ -62,7 +62,7 @@ export class MemStorage implements IStorage {
     this.marketNews = new Map();
     this.currentId = 1;
 
-    // Initialize with a default portfolio for demo purposes
+    // Initialize with sample data
     this.initializeDefaultData();
   }
 
@@ -87,7 +87,167 @@ export class MemStorage implements IStorage {
     };
     this.portfolios.set(1, defaultPortfolio);
 
-    this.currentId = 2;
+    // Create sample holdings
+    const sampleHoldings = [
+      {
+        portfolioId: 1,
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        shares: "50.0000",
+        avgPrice: "155.20",
+        currentPrice: "178.91",
+        totalValue: "8945.50",
+        gainLoss: "1185.50",
+        gainLossPercent: "15.27"
+      },
+      {
+        portfolioId: 1,
+        symbol: "NVDA", 
+        name: "NVIDIA Corporation",
+        shares: "25.0000",
+        avgPrice: "750.45",
+        currentPrice: "891.23",
+        totalValue: "22280.75",
+        gainLoss: "3519.50",
+        gainLossPercent: "18.75"
+      },
+      {
+        portfolioId: 1,
+        symbol: "TSLA",
+        name: "Tesla, Inc.",
+        shares: "15.0000",
+        avgPrice: "265.30",
+        currentPrice: "243.84",
+        totalValue: "3657.60",
+        gainLoss: "-321.90",
+        gainLossPercent: "-8.09"
+      },
+      {
+        portfolioId: 1,
+        symbol: "GOOGL",
+        name: "Alphabet Inc.",
+        shares: "30.0000",
+        avgPrice: "132.80",
+        currentPrice: "139.47",
+        totalValue: "4184.10",
+        gainLoss: "200.10",
+        gainLossPercent: "5.02"
+      },
+      {
+        portfolioId: 1,
+        symbol: "MSFT",
+        name: "Microsoft Corporation",
+        shares: "20.0000",
+        avgPrice: "398.60",
+        currentPrice: "415.23",
+        totalValue: "8304.60",
+        gainLoss: "332.60",
+        gainLossPercent: "4.17"
+      }
+    ];
+
+    sampleHoldings.forEach((holding, index) => {
+      const id = index + 2;
+      this.holdings.set(id, {
+        id,
+        ...holding,
+        updatedAt: new Date()
+      });
+    });
+
+    // Create sample market news
+    const sampleNews = [
+      {
+        title: "NVIDIA Reports Record Q4 Earnings, Beats Expectations",
+        summary: "Strong AI chip demand drives revenue growth of 45% year-over-year, with data center revenue reaching new highs.",
+        sentiment: "bullish" as const,
+        relevantSymbols: ["NVDA", "AMD"],
+        source: "MarketWatch",
+        url: "https://example.com/nvidia-earnings",
+        publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+      },
+      {
+        title: "Apple Announces New AI Features for iPhone",
+        summary: "Tech giant reveals comprehensive AI integration across iOS ecosystem, potentially boosting hardware sales.",
+        sentiment: "bullish" as const,
+        relevantSymbols: ["AAPL"],
+        source: "TechCrunch", 
+        url: "https://example.com/apple-ai-features",
+        publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000)
+      },
+      {
+        title: "Tesla Faces Production Challenges in Q4",
+        summary: "Electric vehicle manufacturer reports lower than expected delivery numbers amid supply chain constraints.",
+        sentiment: "bearish" as const,
+        relevantSymbols: ["TSLA"],
+        source: "Reuters",
+        url: "https://example.com/tesla-production",
+        publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
+      },
+      {
+        title: "Microsoft Cloud Revenue Surges 25% in Latest Quarter",
+        summary: "Azure and productivity software drive strong quarterly performance, exceeding analyst expectations.",
+        sentiment: "bullish" as const,
+        relevantSymbols: ["MSFT"],
+        source: "CNBC",
+        url: "https://example.com/microsoft-cloud",
+        publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000)
+      },
+      {
+        title: "Alphabet Reports Strong Search and Cloud Growth",
+        summary: "Google parent company shows resilient performance across key business segments despite market headwinds.",
+        sentiment: "bullish" as const,
+        relevantSymbols: ["GOOGL"],
+        source: "Bloomberg",
+        url: "https://example.com/alphabet-earnings",
+        publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
+      }
+    ];
+
+    sampleNews.forEach((news, index) => {
+      const id = index + 10;
+      this.marketNews.set(id, {
+        id,
+        ...news,
+        createdAt: new Date()
+      });
+    });
+
+    // Create sample AI insights
+    const sampleInsights = [
+      {
+        portfolioId: 1,
+        type: "opportunity" as const,
+        title: "Sector Diversification Opportunity",
+        description: "Your portfolio is heavily weighted in technology (68%). Consider adding healthcare, energy, or financial sector exposure to reduce concentration risk.",
+        confidence: "0.87"
+      },
+      {
+        portfolioId: 1,
+        type: "risk" as const,
+        title: "High Concentration Risk Detected",
+        description: "NVIDIA represents 31% of your portfolio value. Consider rebalancing to limit single-stock exposure to 15-20% maximum.",
+        confidence: "0.92"
+      },
+      {
+        portfolioId: 1,
+        type: "trend" as const,
+        title: "AI Sector Momentum Continues",
+        description: "Your AI-focused holdings (NVDA, AAPL, GOOGL) are benefiting from strong sector tailwinds. Monitor for profit-taking opportunities.",
+        confidence: "0.84"
+      }
+    ];
+
+    sampleInsights.forEach((insight, index) => {
+      const id = index + 20;
+      this.aiInsights.set(id, {
+        id,
+        ...insight,
+        createdAt: new Date()
+      });
+    });
+
+    this.currentId = 30;
   }
 
   // User operations
@@ -247,8 +407,14 @@ export class MemStorage implements IStorage {
   async createMarketNews(insertNews: InsertMarketNews): Promise<MarketNews> {
     const id = this.currentId++;
     const news: MarketNews = {
-      ...insertNews,
       id,
+      title: insertNews.title,
+      summary: insertNews.summary,
+      sentiment: insertNews.sentiment,
+      relevantSymbols: insertNews.relevantSymbols || null,
+      source: insertNews.source,
+      url: insertNews.url,
+      publishedAt: insertNews.publishedAt,
       createdAt: new Date()
     };
     this.marketNews.set(id, news);
