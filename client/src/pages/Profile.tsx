@@ -118,12 +118,75 @@ export default function Profile() {
           ))}
         </div>
 
+        {/* Profile Edit Form */}
+        {isEditing && (
+          <Card className="bg-dark-secondary border-gray-700 mb-8">
+            <CardHeader>
+              <CardTitle>Edit Profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={profile.name}
+                    onChange={(e) => setProfile({...profile, name: e.target.value})}
+                    className="bg-dark-tertiary border-gray-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({...profile, email: e.target.value})}
+                    className="bg-dark-tertiary border-gray-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    value={profile.phone}
+                    onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                    className="bg-dark-tertiary border-gray-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={profile.location}
+                    onChange={(e) => setProfile({...profile, location: e.target.value})}
+                    className="bg-dark-tertiary border-gray-600 text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-4 pt-4">
+                <Button 
+                  onClick={() => setIsEditing(false)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Save Changes
+                </Button>
+                <Button 
+                  onClick={() => setIsEditing(false)}
+                  variant="outline"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-dark-secondary">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="holdings">My Holdings</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -183,10 +246,10 @@ export default function Profile() {
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-dark-tertiary rounded-lg">
                     <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
-                      <span className="text-purple-400 text-xs">AI</span>
+                      <span className="text-purple-400 text-xs">$</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium">AI insights generated</p>
+                      <p className="text-sm font-medium">Dividend received</p>
                       <p className="text-xs text-gray-400">Yesterday</p>
                     </div>
                   </div>
@@ -252,129 +315,7 @@ export default function Profile() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="bg-dark-secondary border-gray-700">
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={profile.name}
-                        onChange={(e) => setProfile({...profile, name: e.target.value})}
-                        disabled={!isEditing}
-                        className="bg-dark-tertiary border-gray-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profile.email}
-                        onChange={(e) => setProfile({...profile, email: e.target.value})}
-                        disabled={!isEditing}
-                        className="bg-dark-tertiary border-gray-600"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        value={profile.phone}
-                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
-                        disabled={!isEditing}
-                        className="bg-dark-tertiary border-gray-600"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={profile.location}
-                        onChange={(e) => setProfile({...profile, location: e.target.value})}
-                        disabled={!isEditing}
-                        className="bg-dark-tertiary border-gray-600"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {isEditing && (
-                  <div className="flex space-x-4">
-                    <Button className="bg-green-600 hover:bg-green-700">
-                      Save Changes
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="preferences" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Notifications */}
-              <Card className="bg-dark-secondary border-gray-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Bell className="h-5 w-5" />
-                    <span>Notifications</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>Portfolio alerts</span>
-                    <input type="checkbox" className="toggle" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Price alerts</span>
-                    <input type="checkbox" className="toggle" defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>News updates</span>
-                    <input type="checkbox" className="toggle" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>AI insights</span>
-                    <input type="checkbox" className="toggle" defaultChecked />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Security */}
-              <Card className="bg-dark-secondary border-gray-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Shield className="h-5 w-5" />
-                    <span>Security</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start">
-                    Change Password
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Enable Two-Factor Authentication
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Download Account Data
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start text-red-400 border-red-400 hover:bg-red-500/20">
-                    Delete Account
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
         </Tabs>
       </main>
 
