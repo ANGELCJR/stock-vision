@@ -126,12 +126,12 @@ export class DatabaseStorage implements IStorage {
           publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
         },
         {
-          title: "Apple Announces New AI Features for iPhone",
-          summary: "Tech giant reveals comprehensive AI integration across iOS ecosystem, potentially boosting hardware sales.",
+          title: "Apple Announces New Smart Features for iPhone",
+          summary: "Tech giant reveals comprehensive smart technology integration across iOS ecosystem, potentially boosting hardware sales.",
           sentiment: "bullish" as const,
           relevantSymbols: ["AAPL"],
           source: "TechCrunch",
-          url: "https://example.com/apple-ai-features",
+          url: "https://example.com/apple-smart-features",
           publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000)
         },
         {

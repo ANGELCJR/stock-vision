@@ -11,14 +11,14 @@ export default function Footer() {
               <h3 className="text-lg font-bold">StockVision Pro</h3>
             </div>
             <p className="text-gray-400 text-sm">
-              Advanced portfolio analytics and AI-powered insights for modern investors.
+              Advanced portfolio analytics and market insights for modern investors.
             </p>
           </div>
           <div>
             <h4 className="font-semibold mb-4">Features</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>Real-time Data</li>
-              <li>AI Analysis</li>
+              <li>Market Analysis</li>
               <li>Risk Assessment</li>
               <li>Portfolio Tracking</li>
             </ul>

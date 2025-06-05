@@ -17,8 +17,8 @@ export default function News() {
   const [selectedSentiment, setSelectedSentiment] = useState("all");
   const { data: holdings = [] } = useHoldings(1);
   const symbols = holdings.map(h => h.symbol);
-  const { data: allNews = [] } = useMarketNews([], 50);
-  const { data: portfolioNews = [] } = useMarketNews(symbols, 20);
+  const { data: allNews = [], isLoading: allNewsLoading } = useMarketNews([], 50);
+  const { data: portfolioNews = [], isLoading: portfolioNewsLoading } = useMarketNews(symbols, 20);
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
@@ -93,7 +93,7 @@ export default function News() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Market News & Analysis</h1>
-            <p className="text-gray-400">Real-time financial news with AI-powered sentiment analysis</p>
+            <p className="text-gray-400">Real-time financial news with market sentiment analysis</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative">
