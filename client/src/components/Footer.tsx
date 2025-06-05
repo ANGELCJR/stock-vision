@@ -22,16 +22,6 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
                 <Link href="/analytics" className="hover:text-white transition-colors cursor-pointer">
-                  Real-time Data
-                </Link>
-              </li>
-              <li>
-                <Link href="/analytics" className="hover:text-white transition-colors cursor-pointer">
-                  Market Analysis
-                </Link>
-              </li>
-              <li>
-                <Link href="/analytics" className="hover:text-white transition-colors cursor-pointer">
                   Risk Assessment
                 </Link>
               </li>
@@ -46,30 +36,15 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Resources</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <Link href="/analytics" className="hover:text-white transition-colors cursor-pointer">
-                  API Documentation
-                </Link>
-              </li>
-              <li>
-                <Link href="/analytics" className="hover:text-white transition-colors cursor-pointer">
-                  Market Data
-                </Link>
-              </li>
-              <li>
                 <Link href="/news" className="hover:text-white transition-colors cursor-pointer">
                   News & Analysis
-                </Link>
-              </li>
-              <li>
-                <Link href="/analytics" className="hover:text-white transition-colors cursor-pointer">
-                  Educational Content
                 </Link>
               </li>
             </ul>
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
-          <p>© 2024 StockVision Pro. Built with modern web technologies for portfolio demonstration.</p>
+          <p>© 2024 StockVision Pro.</p>
         </div>
       </div>
     </footer>
