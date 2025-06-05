@@ -25,7 +25,7 @@ export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMar
     console.log(`Fetching news with API key: ${NEWS_API_KEY.substring(0, 10)}...`);
     
     const response = await fetch(
-      `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&language=en&pageSize=20&apiKey=${NEWS_API_KEY}`
+      `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&language=en&pageSize=10&apiKey=${NEWS_API_KEY}`
     );
 
     console.log(`News API response status: ${response.status}`);
@@ -33,31 +33,37 @@ export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMar
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`News API error: ${response.status} - ${errorText}`);
-      throw new Error(`News API error: ${response.status}`);
+      throw new Error(`News API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
     console.log(`News API returned ${data.articles?.length || 0} articles`);
 
     if (data.articles && data.articles.length > 0) {
-      return data.articles.map((article: any) => {
-        const sentiment = analyzeSentiment(article.title + " " + (article.description || ""));
-        const relevantSymbols = extractRelevantSymbols(article.title + " " + (article.description || ""), symbols);
+      const processedArticles = data.articles
+        .filter((article: any) => article.url && !article.url.includes('removed'))
+        .slice(0, 5)
+        .map((article: any) => {
+          const sentiment = analyzeSentiment(article.title + " " + (article.description || ""));
+          const relevantSymbols = extractRelevantSymbols(article.title + " " + (article.description || ""), symbols);
 
-        return {
-          title: article.title,
-          summary: article.description || article.title,
-          sentiment,
-          relevantSymbols,
-          source: article.source?.name || "Unknown",
-          url: article.url,
-          publishedAt: new Date(article.publishedAt)
-        };
-      });
+          return {
+            title: article.title,
+            summary: article.description || article.title,
+            sentiment,
+            relevantSymbols,
+            source: article.source?.name || "Unknown",
+            url: article.url,
+            publishedAt: new Date(article.publishedAt)
+          };
+        });
+
+      if (processedArticles.length > 0) {
+        return processedArticles;
+      }
     }
 
-    // Fallback to mock data
-    return getMockNews(symbols);
+    throw new Error('No valid articles returned from NewsAPI');
 
   } catch (error) {
     console.error("Error fetching market news:", error);
