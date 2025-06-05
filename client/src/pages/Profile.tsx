@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Mail, Phone, MapPin, Calendar, Settings, Shield, Bell, CreditCard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,22 +9,77 @@ import { Label } from "@/components/ui/label";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { usePortfolio, useHoldings } from "@/hooks/usePortfolio";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Profile() {
   const { data: portfolio } = usePortfolio(1);
   const { data: holdings = [] } = useHoldings(1);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: "Alex Morgan",
-    email: "alex.morgan@email.com",
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
-    joinDate: "March 2023",
-    investmentExperience: "Intermediate",
-    riskTolerance: "Moderate",
-    investmentGoals: "Long-term Growth"
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    location: ""
   });
+
+  // Fetch user profile data
+  const { data: userData, isLoading } = useQuery({
+    queryKey: ["/api/user", 1],
+    queryFn: async () => {
+      const response = await fetch("/api/user/1");
+      if (!response.ok) throw new Error("Failed to fetch user");
+      return response.json();
+    }
+  });
+
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: typeof formData) => {
+      const response = await fetch("/api/user/1", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) throw new Error("Failed to update profile");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user", 1] });
+      setIsEditing(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update form data when user data loads
+  useEffect(() => {
+    if (userData) {
+      setFormData({
+        fullName: userData.fullName || "",
+        email: userData.email || "",
+        phone: userData.phone || "",
+        location: userData.location || ""
+      });
+    }
+  }, [userData]);
+
+  const handleSave = () => {
+    updateProfileMutation.mutate(formData);
+  };
 
   const profileStats = [
     {
@@ -130,8 +185,8 @@ export default function Profile() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={profile.name}
-                    onChange={(e) => setProfile({...profile, name: e.target.value})}
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                     className="bg-dark-tertiary border-gray-600 text-white"
                   />
                 </div>
@@ -140,8 +195,8 @@ export default function Profile() {
                   <Input
                     id="email"
                     type="email"
-                    value={profile.email}
-                    onChange={(e) => setProfile({...profile, email: e.target.value})}
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                     className="bg-dark-tertiary border-gray-600 text-white"
                   />
                 </div>
@@ -149,8 +204,8 @@ export default function Profile() {
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     className="bg-dark-tertiary border-gray-600 text-white"
                   />
                 </div>
@@ -158,8 +213,8 @@ export default function Profile() {
                   <Label htmlFor="location">Location</Label>
                   <Input
                     id="location"
-                    value={profile.location}
-                    onChange={(e) => setProfile({...profile, location: e.target.value})}
+                    value={formData.location}
+                    onChange={(e) => setFormData({...formData, location: e.target.value})}
                     className="bg-dark-tertiary border-gray-600 text-white"
                   />
                 </div>
