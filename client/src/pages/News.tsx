@@ -199,7 +199,21 @@ export default function News() {
               </TabsList>
 
               <TabsContent value="all-news" className="space-y-4">
-                {filteredAllNews.length > 0 ? (
+                {allNewsLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Card key={i} className="bg-dark-secondary border-gray-700">
+                        <CardContent className="p-6">
+                          <div className="animate-pulse">
+                            <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-700 rounded w-full mb-1"></div>
+                            <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : filteredAllNews.length > 0 ? (
                   filteredAllNews.map((article) => (
                     <Card key={article.id} className="bg-dark-secondary border-gray-700 hover:border-gray-600 transition-colors">
                       <CardContent className="p-6">
@@ -268,7 +282,21 @@ export default function News() {
               </TabsContent>
 
               <TabsContent value="portfolio-news" className="space-y-4">
-                {filteredPortfolioNews.length > 0 ? (
+                {portfolioNewsLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Card key={i} className="bg-dark-secondary border-gray-700">
+                        <CardContent className="p-6">
+                          <div className="animate-pulse">
+                            <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-700 rounded w-full mb-1"></div>
+                            <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : filteredPortfolioNews.length > 0 ? (
                   filteredPortfolioNews.map((article) => (
                     <Card key={article.id} className="bg-dark-secondary border-gray-700 hover:border-gray-600 transition-colors">
                       <CardContent className="p-6">
