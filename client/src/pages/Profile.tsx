@@ -131,16 +131,16 @@ export default function Profile() {
             <User className="h-12 w-12 text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{profile.name}</h1>
-            <p className="text-gray-400 mb-2">{profile.email}</p>
+            <h1 className="text-3xl font-bold mb-2">{userData?.fullName || "Portfolio User"}</h1>
+            <p className="text-gray-400 mb-2">{userData?.email || "Email not set"}</p>
             <div className="flex items-center space-x-4 text-sm text-gray-400">
               <span className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
-                Joined {profile.joinDate}
+                Joined {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Recently"}
               </span>
               <span className="flex items-center">
                 <MapPin className="h-4 w-4 mr-1" />
-                {profile.location}
+                {userData?.location || "Location not set"}
               </span>
             </div>
           </div>
@@ -221,10 +221,11 @@ export default function Profile() {
               </div>
               <div className="flex space-x-4 pt-4">
                 <Button 
-                  onClick={() => setIsEditing(false)}
+                  onClick={handleSave}
+                  disabled={updateProfileMutation.isPending}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  Save Changes
+                  {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
                 <Button 
                   onClick={() => setIsEditing(false)}
@@ -255,18 +256,18 @@ export default function Profile() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Experience Level</span>
                     <Badge variant="secondary" className="bg-blue-500/20 text-blue-400">
-                      {profile.investmentExperience}
+                      Intermediate
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Risk Tolerance</span>
                     <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-400">
-                      {profile.riskTolerance}
+                      Moderate
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Investment Goals</span>
-                    <span className="text-white">{profile.investmentGoals}</span>
+                    <span className="text-white">Long-term Growth</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Portfolio Style</span>
