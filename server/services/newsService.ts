@@ -101,7 +101,7 @@ function getMockNews(symbols: string[] = []): InsertMarketNews[] {
       sentiment: "bullish",
       relevantSymbols: ["NVDA", "AMD"],
       source: "MarketWatch",
-      url: "https://example.com/nvidia-earnings",
+      url: "https://www.marketwatch.com/story/nvidia-earnings-q4-2024",
       publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
     },
     {
@@ -110,25 +110,25 @@ function getMockNews(symbols: string[] = []): InsertMarketNews[] {
       sentiment: "bearish",
       relevantSymbols: [],
       source: "Reuters",
-      url: "https://example.com/fed-rate-hike",
+      url: "https://www.reuters.com/business/finance/fed-rate-policy-inflation-2024",
       publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000) // 4 hours ago
     },
     {
-      title: "EV Sales Growth Slows in Q4, Industry Faces Headwinds",
-      summary: "Electric vehicle adoption rate shows signs of deceleration as consumer demand shifts amid economic uncertainty.",
-      sentiment: "neutral",
+      title: "Tesla Faces Production Challenges in Q4",
+      summary: "Electric vehicle manufacturer reports lower than expected delivery numbers amid supply chain constraints.",
+      sentiment: "bearish",
       relevantSymbols: ["TSLA"],
-      source: "Bloomberg",
-      url: "https://example.com/ev-sales-slowdown",
+      source: "Reuters",
+      url: "https://www.reuters.com/business/autos-transportation/tesla-q4-deliveries-2024",
       publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000) // 6 hours ago
     },
     {
-      title: "Apple Announces New AI Features for iPhone",
-      summary: "Tech giant reveals comprehensive AI integration across iOS ecosystem, potentially boosting hardware sales.",
+      title: "Apple Announces New Features for iPhone",
+      summary: "Tech giant reveals comprehensive integration across iOS ecosystem, potentially boosting hardware sales.",
       sentiment: "bullish",
       relevantSymbols: ["AAPL"],
       source: "TechCrunch",
-      url: "https://example.com/apple-ai-features",
+      url: "https://techcrunch.com/2024/apple-iphone-features-announcement",
       publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000) // 8 hours ago
     },
     {
@@ -137,7 +137,7 @@ function getMockNews(symbols: string[] = []): InsertMarketNews[] {
       sentiment: "bullish",
       relevantSymbols: ["MSFT"],
       source: "CNBC",
-      url: "https://example.com/microsoft-cloud-revenue",
+      url: "https://www.cnbc.com/2024/microsoft-cloud-earnings-q4",
       publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000) // 12 hours ago
     }
   ];
