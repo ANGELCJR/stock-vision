@@ -22,15 +22,22 @@ export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMar
       query += " OR " + symbols.join(" OR ");
     }
 
+    console.log(`Fetching news with API key: ${NEWS_API_KEY.substring(0, 10)}...`);
+    
     const response = await fetch(
       `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&language=en&pageSize=20&apiKey=${NEWS_API_KEY}`
     );
 
+    console.log(`News API response status: ${response.status}`);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`News API error: ${response.status} - ${errorText}`);
       throw new Error(`News API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log(`News API returned ${data.articles?.length || 0} articles`);
 
     if (data.articles && data.articles.length > 0) {
       return data.articles.map((article: any) => {

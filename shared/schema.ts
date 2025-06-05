@@ -6,6 +6,11 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  fullName: text("full_name"),
+  email: text("email"),
+  phone: text("phone"),
+  location: text("location"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const portfolios = pgTable("portfolios", {
