@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMarketNews } from "@/hooks/useMarketNews";
 import { useHoldings } from "@/hooks/usePortfolio";
+import { Link } from "wouter";
 
 interface MarketNewsProps {
   portfolioId: number;
@@ -48,8 +49,8 @@ export default function MarketNews({ portfolioId }: MarketNewsProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-semibold">Market News</CardTitle>
-            <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
-              View All
+            <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300" asChild>
+              <Link href="/news">View All</Link>
             </Button>
           </div>
         </CardHeader>
@@ -71,8 +72,8 @@ export default function MarketNews({ portfolioId }: MarketNewsProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold">Market News</CardTitle>
-          <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
-            View All
+          <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300" asChild>
+            <Link href="/news">View All</Link>
           </Button>
         </div>
       </CardHeader>
@@ -119,16 +120,28 @@ export default function MarketNews({ portfolioId }: MarketNewsProps) {
                           </>
                         )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        asChild
-                        className="text-gray-400 hover:text-white p-1 h-auto"
-                      >
-                        <a href={article.url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="text-blue-400 hover:text-blue-300 text-xs"
+                        >
+                          <a href={article.url} target="_blank" rel="noopener noreferrer">
+                            Read More
+                          </a>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="text-gray-400 hover:text-white p-1 h-auto"
+                        >
+                          <a href={article.url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                     <div className="mt-1">
                       <span className="text-xs text-gray-500">{article.source}</span>
