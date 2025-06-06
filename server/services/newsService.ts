@@ -16,7 +16,7 @@ const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
 
 export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMarketNews[]> {
   try {
-    console.log(`Fetching news with Finnhub API key: ${FINNHUB_API_KEY.substring(0, 10)}...`);
+    console.log(`Fetching news with Finnhub API...`);
     
     const response = await fetch(
       `${FINNHUB_BASE_URL}/news?category=general&token=${FINNHUB_API_KEY}`
@@ -35,15 +35,21 @@ export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMar
 
     if (data && Array.isArray(data) && data.length > 0) {
       const processedArticles = data
-        .filter((article: any) => article.url && article.headline)
-        .slice(0, 5)
+        .filter((article: any) => 
+          article.url && 
+          article.headline && 
+          article.headline.trim() !== "" &&
+          article.summary && 
+          article.summary.trim() !== ""
+        )
+        .slice(0, 10)
         .map((article: any) => {
-          const sentiment = analyzeSentiment(article.headline + " " + (article.summary || ""));
-          const relevantSymbols = extractRelevantSymbols(article.headline + " " + (article.summary || ""), symbols);
+          const sentiment = analyzeSentiment(article.headline + " " + article.summary);
+          const relevantSymbols = extractRelevantSymbols(article.headline + " " + article.summary, symbols);
 
           return {
-            title: article.headline,
-            summary: article.summary || article.headline,
+            title: article.headline.trim(),
+            summary: article.summary.trim(),
             sentiment,
             relevantSymbols: relevantSymbols || [],
             source: article.source || "Finnhub",
@@ -52,16 +58,16 @@ export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMar
           };
         });
 
-      if (processedArticles.length > 0) {
-        return processedArticles;
-      }
+      console.log(`Processed ${processedArticles.length} valid articles`);
+      return processedArticles;
     }
 
-    throw new Error('No valid articles returned from Finnhub API');
+    console.log('No valid articles found in Finnhub response');
+    return [];
 
   } catch (error) {
     console.error("Error fetching market news:", error);
-    return getMockNews(symbols);
+    return [];
   }
 }
 
@@ -152,7 +158,7 @@ function getMockNews(symbols: string[] = []): InsertMarketNews[] {
   // Filter by relevant symbols if provided
   if (symbols.length > 0) {
     return mockArticles.filter(article => 
-      article.relevantSymbols.some(symbol => symbols.includes(symbol))
+      article.relevantSymbols?.some(symbol => symbols.includes(symbol)) || false
     );
   }
 
