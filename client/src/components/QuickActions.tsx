@@ -29,6 +29,7 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
       await addHoldingMutation.mutateAsync({
         portfolioId,
         symbol: formData.symbol.toUpperCase(),
+        name: formData.companyName || formData.symbol.toUpperCase(),
         shares: formData.shares,
         avgPrice: formData.avgPrice
       });

@@ -20,35 +20,39 @@ interface HistoricalDataPoint {
   volume: number;
 }
 
-// Alpha Vantage API integration
-const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || process.env.ALPHAVANTAGE_API_KEY || "demo";
-const ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query";
+// Finnhub API integration
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY || "demo";
+const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
 
 export async function getStockData(symbol: string): Promise<StockData | null> {
   try {
-    // Try Alpha Vantage first
+    // Use Finnhub for stock quotes
     const response = await fetch(
-      `${ALPHA_VANTAGE_BASE_URL}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}`
+      `${FINNHUB_BASE_URL}/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
     );
     
     if (!response.ok) {
-      throw new Error(`Alpha Vantage API error: ${response.status}`);
+      throw new Error(`Finnhub API error: ${response.status}`);
     }
     
     const data = await response.json();
     
-    if (data["Global Quote"] && Object.keys(data["Global Quote"]).length > 0) {
-      const quote = data["Global Quote"];
+    if (data.c && data.c > 0) { // 'c' is current price
+      const currentPrice = data.c;
+      const previousClose = data.pc;
+      const change = currentPrice - previousClose;
+      const changePercent = (change / previousClose) * 100;
+      
       return {
-        symbol: quote["01. symbol"],
-        name: quote["01. symbol"], // Alpha Vantage doesn't provide company name in quote
-        price: parseFloat(quote["05. price"]),
-        change: parseFloat(quote["09. change"]),
-        changePercent: parseFloat(quote["10. change percent"].replace("%", "")),
-        volume: parseInt(quote["06. volume"]),
-        previousClose: parseFloat(quote["08. previous close"]),
-        dayHigh: parseFloat(quote["03. high"]),
-        dayLow: parseFloat(quote["04. low"])
+        symbol: symbol.toUpperCase(),
+        name: getCompanyName(symbol), // Use existing function for company name
+        price: currentPrice,
+        change: change,
+        changePercent: changePercent,
+        volume: 0, // Finnhub quote doesn't include volume
+        previousClose: previousClose,
+        dayHigh: data.h,
+        dayLow: data.l
       };
     }
     
@@ -63,64 +67,10 @@ export async function getStockData(symbol: string): Promise<StockData | null> {
 
 export async function getHistoricalData(symbol: string, period: string): Promise<HistoricalDataPoint[]> {
   try {
-    let alphaVantageFunction = "TIME_SERIES_INTRADAY";
-    let interval = "5min";
-    
-    switch (period) {
-      case "1d":
-        alphaVantageFunction = "TIME_SERIES_INTRADAY";
-        interval = "5min";
-        break;
-      case "1w":
-      case "1m":
-        alphaVantageFunction = "TIME_SERIES_DAILY";
-        break;
-      case "3m":
-      case "1y":
-        alphaVantageFunction = "TIME_SERIES_WEEKLY";
-        break;
-    }
-    
-    let url = `${ALPHA_VANTAGE_BASE_URL}?function=${alphaVantageFunction}&symbol=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}`;
-    if (alphaVantageFunction === "TIME_SERIES_INTRADAY") {
-      url += `&interval=${interval}`;
-    }
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Alpha Vantage API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    let timeSeries: any = null;
-    if (data["Time Series (5min)"]) {
-      timeSeries = data["Time Series (5min)"];
-    } else if (data["Time Series (Daily)"]) {
-      timeSeries = data["Time Series (Daily)"];
-    } else if (data["Weekly Time Series"]) {
-      timeSeries = data["Weekly Time Series"];
-    }
-    
-    if (timeSeries) {
-      const dataPoints: HistoricalDataPoint[] = Object.entries(timeSeries)
-        .map(([timestamp, values]: [string, any]) => ({
-          timestamp: new Date(timestamp),
-          open: parseFloat(values["1. open"]),
-          high: parseFloat(values["2. high"]),
-          low: parseFloat(values["3. low"]),
-          close: parseFloat(values["4. close"]),
-          volume: parseInt(values["5. volume"])
-        }))
-        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      
-      return dataPoints;
-    }
-    
-    // Fallback to mock data
+    // Finnhub provides historical data with different endpoints
+    // For now, return mock historical data since Finnhub requires different endpoints for historical data
+    console.log(`Generating historical data for ${symbol} (${period})`);
     return getMockHistoricalData(symbol, period);
-    
   } catch (error) {
     console.error(`Error fetching historical data for ${symbol}:`, error);
     return getMockHistoricalData(symbol, period);
