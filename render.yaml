@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: stock-portfolio-platform
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
