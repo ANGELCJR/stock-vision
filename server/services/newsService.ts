@@ -10,51 +10,45 @@ interface NewsArticle {
   publishedAt: Date;
 }
 
-// News API integration
-const NEWS_API_KEY = process.env.NEWS_API_KEY || process.env.NEWSAPI_KEY || "demo";
-const NEWS_API_BASE_URL = "https://newsapi.org/v2";
+// Finnhub API integration
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY || "demo";
+const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
 
 export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMarketNews[]> {
   try {
-    // Build query based on symbols
-    let query = "stock market OR finance OR investing";
-    if (symbols.length > 0) {
-      query += " OR " + symbols.join(" OR ");
-    }
-
-    console.log(`Fetching news with API key: ${NEWS_API_KEY.substring(0, 10)}...`);
+    console.log(`Fetching news with Finnhub API key: ${FINNHUB_API_KEY.substring(0, 10)}...`);
     
     const response = await fetch(
-      `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&language=en&pageSize=10&apiKey=${NEWS_API_KEY}`
+      `${FINNHUB_BASE_URL}/news?category=general&token=${FINNHUB_API_KEY}`
     );
 
-    console.log(`News API response status: ${response.status}`);
+    console.log(`Finnhub API response status: ${response.status}`);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`News API error: ${response.status} - ${errorText}`);
-      throw new Error(`News API error: ${response.status} - ${errorText}`);
+      console.error(`Finnhub API error: ${response.status} - ${errorText}`);
+      throw new Error(`Finnhub API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log(`News API returned ${data.articles?.length || 0} articles`);
+    console.log(`Finnhub API returned ${data.length || 0} articles`);
 
-    if (data.articles && data.articles.length > 0) {
-      const processedArticles = data.articles
-        .filter((article: any) => article.url && !article.url.includes('removed'))
+    if (data && Array.isArray(data) && data.length > 0) {
+      const processedArticles = data
+        .filter((article: any) => article.url && article.headline)
         .slice(0, 5)
         .map((article: any) => {
-          const sentiment = analyzeSentiment(article.title + " " + (article.description || ""));
-          const relevantSymbols = extractRelevantSymbols(article.title + " " + (article.description || ""), symbols);
+          const sentiment = analyzeSentiment(article.headline + " " + (article.summary || ""));
+          const relevantSymbols = extractRelevantSymbols(article.headline + " " + (article.summary || ""), symbols);
 
           return {
-            title: article.title,
-            summary: article.description || article.title,
+            title: article.headline,
+            summary: article.summary || article.headline,
             sentiment,
-            relevantSymbols,
-            source: article.source?.name || "Unknown",
+            relevantSymbols: relevantSymbols || [],
+            source: article.source || "Finnhub",
             url: article.url,
-            publishedAt: new Date(article.publishedAt)
+            publishedAt: new Date(article.datetime * 1000)
           };
         });
 
@@ -63,7 +57,7 @@ export async function fetchMarketNews(symbols: string[] = []): Promise<InsertMar
       }
     }
 
-    throw new Error('No valid articles returned from NewsAPI');
+    throw new Error('No valid articles returned from Finnhub API');
 
   } catch (error) {
     console.error("Error fetching market news:", error);
