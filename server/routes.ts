@@ -263,25 +263,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const portfolioId = parseInt(req.params.id);
       const period = req.query.period as string || "1d";
       
-      // Generate mock performance data for different time periods
-      const generatePerformanceData = (period: string) => {
-        const baseValue = 127845.32;
+      // Get current portfolio value
+      const portfolio = await storage.getPortfolio(portfolioId);
+      const currentValue = parseFloat(portfolio?.totalValue || "0");
+      
+      // Generate performance data based on actual portfolio value
+      const generatePerformanceData = (period: string, baseValue: number) => {
         const points = period === "1d" ? 14 : period === "1w" ? 7 : period === "1m" ? 30 : period === "3m" ? 90 : 365;
         const data = [];
         
+        // If no value, return zero-line
+        if (baseValue === 0) {
+          for (let i = 0; i < points; i++) {
+            data.push({
+              timestamp: new Date(Date.now() - (points - i) * (period === "1d" ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000)),
+              value: 0
+            });
+          }
+          return data;
+        }
+        
+        // Generate realistic performance data around current value
         for (let i = 0; i < points; i++) {
-          const variance = (Math.random() - 0.5) * 0.02; // 2% variance
-          const value = baseValue * (1 + variance * i / points);
+          const variance = (Math.random() - 0.5) * 0.015; // 1.5% variance
+          const timeProgress = i / points;
+          const value = baseValue * (0.95 + (0.05 * timeProgress) + variance);
           data.push({
             timestamp: new Date(Date.now() - (points - i) * (period === "1d" ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000)),
-            value: value
+            value: Math.max(0, value)
           });
         }
+        
+        // Ensure the last point matches current portfolio value
+        data[data.length - 1].value = baseValue;
         
         return data;
       };
       
-      const performanceData = generatePerformanceData(period);
+      const performanceData = generatePerformanceData(period, currentValue);
       res.json(performanceData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch performance data" });
