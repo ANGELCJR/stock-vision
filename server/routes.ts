@@ -361,32 +361,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search stocks
+  // Search stocks - UPDATED TO USE REAL FINNHUB API
   app.get("/api/search", async (req, res) => {
     try {
       const query = req.query.q as string;
-      if (!query || query.length < 1) {
+      if (!query || query.length < 2) {
         return res.json([]);
       }
 
-      // Mock search results - in a real app, this would search a stock database
-      const mockResults = [
-        { symbol: "AAPL", name: "Apple Inc." },
-        { symbol: "GOOGL", name: "Alphabet Inc." },
-        { symbol: "MSFT", name: "Microsoft Corporation" },
-        { symbol: "NVDA", name: "NVIDIA Corporation" },
-        { symbol: "TSLA", name: "Tesla, Inc." },
-        { symbol: "AMZN", name: "Amazon.com Inc." },
-        { symbol: "META", name: "Meta Platforms Inc." },
-        { symbol: "NFLX", name: "Netflix Inc." }
-      ].filter(stock => 
-        stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
-        stock.name.toLowerCase().includes(query.toLowerCase())
+      console.log(`Searching for stocks with query: "${query}"`);
+      
+      // Use Finnhub symbol lookup API
+      const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
+      const response = await fetch(
+        `https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${FINNHUB_API_KEY}`
       );
 
-      res.json(mockResults);
+      if (!response.ok) {
+        console.error(`Finnhub search API error: ${response.status}`);
+        return res.status(500).json({ error: "Search service unavailable" });
+      }
+
+      const data = await response.json();
+      console.log(`Finnhub returned ${data.result?.length || 0} search results`);
+
+      if (data.result && Array.isArray(data.result)) {
+        // Filter and format results
+        const searchResults = data.result
+          .filter((item: any) => 
+            item.symbol && 
+            item.description && 
+            item.type === "Common Stock" &&
+            !item.symbol.includes(".") // Remove foreign exchanges
+          )
+          .slice(0, 20) // Limit to 20 results
+          .map((item: any) => ({
+            symbol: item.symbol,
+            name: item.description
+          }));
+
+        console.log(`Returning ${searchResults.length} filtered results`);
+        res.json(searchResults);
+      } else {
+        console.log("No results found or invalid response format");
+        res.json([]);
+      }
     } catch (error) {
+      console.error("Error searching stocks:", error);
       res.status(500).json({ error: "Search failed" });
+    }
+  });
+
+  // Stock detail route - NEW ENDPOINT
+  app.get("/api/stocks/:symbol/detail", async (req, res) => {
+    try {
+      const symbol = req.params.symbol.toUpperCase();
+      
+      // Get basic stock data
+      const stockData = await getStockData(symbol);
+      if (!stockData) {
+        return res.status(404).json({ error: "Stock not found" });
+      }
+
+      // Get company profile from Finnhub
+      const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
+      const profileResponse = await fetch(
+        `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+      );
+
+      let companyProfile: any = {};
+      if (profileResponse.ok) {
+        companyProfile = await profileResponse.json();
+      }
+
+      // Combine stock data with company profile
+      const stockDetail = {
+        ...stockData,
+        logo: companyProfile.logo || "",
+        weburl: companyProfile.weburl || "",
+        industry: companyProfile.finnhubIndustry || "",
+        exchange: companyProfile.exchange || "",
+        marketCapitalization: companyProfile.marketCapitalization || 0,
+        shareOutstanding: companyProfile.shareOutstanding || 0,
+        country: companyProfile.country || "US"
+      };
+
+      res.json(stockDetail);
+    } catch (error) {
+      console.error("Error fetching stock detail:", error);
+      res.status(500).json({ error: "Failed to fetch stock details" });
     }
   });
 

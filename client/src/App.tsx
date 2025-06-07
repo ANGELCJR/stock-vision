@@ -1,3 +1,4 @@
+import StockDetail from "@/pages/StockDetail";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -13,6 +14,7 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
+      <Route path="/stock/:symbol" component={StockDetail} />
       <Route path="/" component={Dashboard} />
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/analytics" component={Analytics} />
