@@ -3,32 +3,32 @@
 @tailwind utilities;
 
 :root {
-  /* Light theme - default */
-  --background: 0 0% 100%; /* #FFFFFF */
-  --foreground: 222 84% 5%; /* #0F172A */
-  --muted: 210 40% 98%; /* #F8FAFC */
-  --muted-foreground: 215 16% 47%; /* #64748B */
+  /* Light theme - improved readability */
+  --background: 210 20% 98%; /* #F7F9FB */
+  --foreground: 222 84% 12%; /* #1E293B */
+  --muted: 210 40% 94%; /* #F1F5F9 */
+  --muted-foreground: 215 16% 35%; /* #475569 */
   --popover: 0 0% 100%; /* #FFFFFF */
-  --popover-foreground: 222 84% 5%; /* #0F172A */
+  --popover-foreground: 222 84% 12%; /* #1E293B */
   --card: 0 0% 100%; /* #FFFFFF */
-  --card-foreground: 222 84% 5%; /* #0F172A */
-  --border: 214 32% 91%; /* #E2E8F0 */
+  --card-foreground: 222 84% 12%; /* #1E293B */
+  --border: 214 32% 88%; /* #D4D8DD */
   --input: 214 32% 91%; /* #E2E8F0 */
   --primary: 207 90% 54%; /* #1E90FF */
   --primary-foreground: 210 40% 98%; /* #F8FAFC */
-  --secondary: 210 40% 96%; /* #F1F5F9 */
-  --secondary-foreground: 222 84% 5%; /* #0F172A */
-  --accent: 210 40% 96%; /* #F1F5F9 */
-  --accent-foreground: 222 84% 5%; /* #0F172A */
+  --secondary: 210 40% 94%; /* #F1F5F9 */
+  --secondary-foreground: 222 84% 12%; /* #1E293B */
+  --accent: 210 40% 94%; /* #F1F5F9 */
+  --accent-foreground: 222 84% 12%; /* #1E293B */
   --destructive: 0 84% 60%; /* #EF4444 */
   --destructive-foreground: 210 40% 98%; /* #F8FAFC */
   --ring: 207 90% 54%; /* #1E90FF */
   --radius: 0.5rem;
   
   /* Custom light theme colors */
-  --light-primary: 0 0% 100%; /* #FFFFFF */
-  --light-secondary: 210 40% 98%; /* #F8FAFC */
-  --light-tertiary: 210 40% 96%; /* #F1F5F9 */
+  --light-primary: 210 20% 98%; /* #F7F9FB */
+  --light-secondary: 0 0% 100%; /* #FFFFFF */
+  --light-tertiary: 210 40% 94%; /* #F1F5F9 */
 }
 
 .dark {
