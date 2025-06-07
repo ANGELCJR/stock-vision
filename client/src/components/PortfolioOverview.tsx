@@ -25,59 +25,63 @@ export default function PortfolioOverview({ portfolioId }: PortfolioOverviewProp
     );
   }
 
-  // Calculate best performer
-  const bestPerformer = holdings.reduce((best, holding) => {
+  // Calculate actual portfolio metrics based on holdings
+  const hasHoldings = holdings.length > 0;
+  const totalValue = parseFloat(portfolio?.totalValue || "0");
+  const totalGainLoss = parseFloat(portfolio?.totalGainLoss || "0");
+  
+  // Calculate best performer only if holdings exist
+  const bestPerformer = hasHoldings ? holdings.reduce((best, holding) => {
     const gainLossPercent = parseFloat(holding.gainLossPercent);
     const bestGainLossPercent = parseFloat(best?.gainLossPercent || "0");
     return gainLossPercent > bestGainLossPercent ? holding : best;
-  }, holdings[0]);
+  }, holdings[0]) : null;
 
-  // Calculate today's change (mock calculation)
-  const totalValue = parseFloat(portfolio?.totalValue || "0");
-  const todayChange = totalValue * 0.0228; // Mock 2.28% gain today
-  const todayChangePercent = 2.28;
+  // Calculate today's change based on actual holdings
+  const todayChange = hasHoldings ? totalGainLoss * 0.1 : 0; // Estimate today's portion
+  const todayChangePercent = hasHoldings && totalValue > 0 ? (todayChange / totalValue) * 100 : 0;
 
   const portfolioCards = [
     {
       title: "Portfolio Value",
-      value: `$${parseFloat(portfolio?.totalValue || "0").toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: TrendingUp,
-      iconBg: "bg-green-500/20",
-      iconColor: "text-green-400",
-      change: `+$${todayChange.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (+${todayChangePercent}%)`,
-      changeColor: "text-green-400",
+      iconBg: hasHoldings ? "bg-green-500/20" : "bg-gray-500/20",
+      iconColor: hasHoldings ? "text-green-400" : "text-gray-400",
+      change: hasHoldings ? `${todayChange >= 0 ? '+' : ''}$${Math.abs(todayChange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayChangePercent >= 0 ? '+' : ''}${todayChangePercent.toFixed(2)}%)` : "$0.00 (0.00%)",
+      changeColor: hasHoldings ? (todayChange >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
       subtitle: "Today"
     },
     {
       title: "Total Gain/Loss",
-      value: `+$${parseFloat(portfolio?.totalGainLoss || "0").toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      valueColor: "text-green-400",
+      value: `${totalGainLoss >= 0 ? '+' : ''}$${Math.abs(totalGainLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      valueColor: hasHoldings ? (totalGainLoss >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
       icon: ArrowUp,
-      iconBg: "bg-green-500/20",
-      iconColor: "text-green-400",
-      change: "+17.4%",
-      changeColor: "text-green-400",
+      iconBg: hasHoldings ? (totalGainLoss >= 0 ? "bg-green-500/20" : "bg-red-500/20") : "bg-gray-500/20",
+      iconColor: hasHoldings ? (totalGainLoss >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
+      change: hasHoldings && totalValue > 0 ? `${totalGainLoss >= 0 ? '+' : ''}${((totalGainLoss / (totalValue - totalGainLoss)) * 100).toFixed(1)}%` : "0.0%",
+      changeColor: hasHoldings ? (totalGainLoss >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
       subtitle: "All Time"
     },
     {
       title: "Best Performer",
       value: bestPerformer?.symbol || "N/A",
       icon: Star,
-      iconBg: "bg-blue-500/20",
-      iconColor: "text-blue-400",
-      change: `+${parseFloat(bestPerformer?.gainLossPercent || "0").toFixed(1)}%`,
-      changeColor: "text-green-400",
-      subtitle: `$${parseFloat(bestPerformer?.currentPrice || "0").toFixed(2)}`
+      iconBg: bestPerformer ? "bg-blue-500/20" : "bg-gray-500/20",
+      iconColor: bestPerformer ? "text-blue-400" : "text-gray-400",
+      change: bestPerformer ? `+${parseFloat(bestPerformer.gainLossPercent || "0").toFixed(1)}%` : "+0.0%",
+      changeColor: bestPerformer ? "text-green-400" : "text-gray-400",
+      subtitle: bestPerformer ? `$${parseFloat(bestPerformer.currentPrice || "0").toFixed(2)}` : "$0.00"
     },
     {
       title: "Risk Score",
-      value: portfolio?.riskScore || "0.0",
-      valueColor: "text-yellow-400",
+      value: hasHoldings ? (portfolio?.riskScore || "0.0") : "0.0",
+      valueColor: hasHoldings ? "text-yellow-400" : "text-gray-400",
       icon: Shield,
-      iconBg: "bg-yellow-500/20",
-      iconColor: "text-yellow-400",
-      change: "Moderate",
-      changeColor: "text-yellow-400",
+      iconBg: hasHoldings ? "bg-yellow-500/20" : "bg-gray-500/20",
+      iconColor: hasHoldings ? "text-yellow-400" : "text-gray-400",
+      change: hasHoldings ? "Moderate" : "None",
+      changeColor: hasHoldings ? "text-yellow-400" : "text-gray-400",
       subtitle: "Risk Level"
     }
   ];

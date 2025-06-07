@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePortfolioPerformance } from "@/hooks/usePortfolio";
+import { usePortfolioPerformance, useHoldings } from "@/hooks/usePortfolio";
 import {
   LineChart,
   Line,
@@ -30,6 +30,9 @@ const timePeriods = [
 export default function PerformanceChart({ portfolioId }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("1d");
   const { data: performanceData = [], isLoading } = usePortfolioPerformance(portfolioId, selectedPeriod);
+  const { data: holdings = [] } = useHoldings(portfolioId);
+  
+  const hasHoldings = holdings.length > 0;
 
   const formatTooltipValue = (value: number) => {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -85,47 +88,56 @@ export default function PerformanceChart({ portfolioId }: PerformanceChartProps)
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-80 w-full chart-container">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={performanceData}>
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="timestamp"
-                tickFormatter={formatXAxisLabel}
-                stroke="#9CA3AF"
-                fontSize={12}
-              />
-              <YAxis 
-                tickFormatter={(value) => `$${value.toLocaleString()}`}
-                stroke="#9CA3AF"
-                fontSize={12}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1F2937',
-                  border: '1px solid #374151',
-                  borderRadius: '8px',
-                  color: '#F9FAFB'
-                }}
-                formatter={(value: any) => [formatTooltipValue(value), 'Portfolio Value']}
-                labelFormatter={(label) => new Date(label).toLocaleString()}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                fill="url(#colorValue)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {!hasHoldings ? (
+          <div className="h-80 w-full flex items-center justify-center border-2 border-dashed border-gray-600 rounded-lg">
+            <div className="text-center">
+              <div className="text-gray-400 text-lg mb-2">No holdings found</div>
+              <div className="text-gray-500 text-sm">Add your first stock to see performance tracking</div>
+            </div>
+          </div>
+        ) : (
+          <div className="h-80 w-full chart-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={performanceData}>
+                <defs>
+                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="timestamp"
+                  tickFormatter={formatXAxisLabel}
+                  stroke="#9CA3AF"
+                  fontSize={12}
+                />
+                <YAxis 
+                  tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  stroke="#9CA3AF"
+                  fontSize={12}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#F9FAFB'
+                  }}
+                  formatter={(value: any) => [formatTooltipValue(value), 'Portfolio Value']}
+                  labelFormatter={(label) => new Date(label).toLocaleString()}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  fill="url(#colorValue)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
