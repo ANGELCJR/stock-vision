@@ -161,6 +161,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Recalculate portfolio totals after adding holding
       await updatePortfolioTotals(portfolioId);
 
+      // Record portfolio history snapshot
+      const updatedPortfolio = await storage.getPortfolio(portfolioId);
+      if (updatedPortfolio) {
+        await storage.createPortfolioHistory({
+          portfolioId,
+          totalValue: updatedPortfolio.totalValue,
+          totalGainLoss: updatedPortfolio.totalGainLoss
+        });
+      }
+
       res.json(updatedHolding);
     } catch (error) {
       console.error("Error creating holding:", error);
@@ -184,6 +194,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (success) {
         // Recalculate portfolio totals after deletion
         await updatePortfolioTotals(portfolioId);
+
+        // Record portfolio history snapshot
+        const updatedPortfolio = await storage.getPortfolio(portfolioId);
+        if (updatedPortfolio) {
+          await storage.createPortfolioHistory({
+            portfolioId,
+            totalValue: updatedPortfolio.totalValue,
+            totalGainLoss: updatedPortfolio.totalGainLoss
+          });
+        }
+
         res.json({ success: true });
       } else {
         res.status(404).json({ error: "Holding not found" });
@@ -263,46 +284,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const portfolioId = parseInt(req.params.id);
       const period = req.query.period as string || "1d";
       
-      // Get current portfolio value
+      // Get holdings with their creation dates to build actual timeline
+      const holdings = await storage.getHoldingsByPortfolioId(portfolioId);
       const portfolio = await storage.getPortfolio(portfolioId);
       const currentValue = parseFloat(portfolio?.totalValue || "0");
       
-      // Generate performance data based on actual portfolio value
-      const generatePerformanceData = (period: string, baseValue: number) => {
-        const points = period === "1d" ? 14 : period === "1w" ? 7 : period === "1m" ? 30 : period === "3m" ? 90 : 365;
-        const data = [];
-        
-        // If no value, return zero-line
-        if (baseValue === 0) {
-          for (let i = 0; i < points; i++) {
-            data.push({
-              timestamp: new Date(Date.now() - (points - i) * (period === "1d" ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000)),
-              value: 0
-            });
-          }
-          return data;
-        }
-        
-        // Generate realistic performance data around current value
-        for (let i = 0; i < points; i++) {
-          const variance = (Math.random() - 0.5) * 0.015; // 1.5% variance
-          const timeProgress = i / points;
-          const value = baseValue * (0.95 + (0.05 * timeProgress) + variance);
-          data.push({
-            timestamp: new Date(Date.now() - (points - i) * (period === "1d" ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000)),
-            value: Math.max(0, value)
-          });
-        }
-        
-        // Ensure the last point matches current portfolio value
-        data[data.length - 1].value = baseValue;
-        
-        return data;
-      };
+      // Calculate time range based on period
+      const now = new Date();
+      let startDate = new Date();
+      let points = 14;
+      let intervalMs = 30 * 60 * 1000; // 30 minutes for 1d
       
-      const performanceData = generatePerformanceData(period, currentValue);
-      res.json(performanceData);
+      switch (period) {
+        case "1d":
+          startDate.setDate(now.getDate() - 1);
+          points = 14;
+          intervalMs = 30 * 60 * 1000; // 30 minutes
+          break;
+        case "1w":
+          startDate.setDate(now.getDate() - 7);
+          points = 7;
+          intervalMs = 24 * 60 * 60 * 1000; // 1 day
+          break;
+        case "1m":
+          startDate.setMonth(now.getMonth() - 1);
+          points = 30;
+          intervalMs = 24 * 60 * 60 * 1000; // 1 day
+          break;
+        case "3m":
+          startDate.setMonth(now.getMonth() - 3);
+          points = 90;
+          intervalMs = 24 * 60 * 60 * 1000; // 1 day
+          break;
+        case "1y":
+          startDate.setFullYear(now.getFullYear() - 1);
+          points = 365;
+          intervalMs = 24 * 60 * 60 * 1000; // 1 day
+          break;
+      }
+      
+      // Generate timeline based on actual investment dates
+      const data = [];
+      let portfolioValue = 0;
+      
+      for (let i = 0; i < points; i++) {
+        const timestamp = new Date(now.getTime() - (points - i) * intervalMs);
+        
+        // Calculate portfolio value at this point in time
+        portfolioValue = 0;
+        for (const holding of holdings) {
+          const holdingCreatedAt = new Date(holding.createdAt || now);
+          
+          // Only include holdings that existed at this timestamp
+          if (holdingCreatedAt <= timestamp) {
+            // Use a simplified calculation - actual holding value at that time
+            const holdingValue = parseFloat(holding.totalValue || "0");
+            portfolioValue += holdingValue;
+          }
+        }
+        
+        data.push({
+          timestamp,
+          value: portfolioValue
+        });
+      }
+      
+      // Ensure the final point shows current actual value
+      if (data.length > 0) {
+        data[data.length - 1].value = currentValue;
+      }
+      
+      res.json(data);
     } catch (error) {
+      console.error("Error fetching performance data:", error);
       res.status(500).json({ error: "Failed to fetch performance data" });
     }
   });
