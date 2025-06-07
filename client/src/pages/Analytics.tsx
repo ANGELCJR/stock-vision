@@ -582,10 +582,6 @@ export default function Analytics() {
                         <p className="text-xs text-gray-300">Add healthcare and energy exposure to reduce correlation</p>
                       </div>
                     </div>
-                    <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700">
-                      <Brain className="h-4 w-4 mr-2" />
-                      Generate AI Optimization
-                    </Button>
                   </div>
                 </div>
               </CardContent>

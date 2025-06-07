@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Filter, ArrowUpDown, Plus, Trash2 } from "lucide-react";
+import { ArrowUpDown, Plus, Trash2 } from "lucide-react";
 import { useHoldings, useAddHolding, useDeleteHolding } from "@/hooks/usePortfolio";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
   const { toast } = useToast();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [newHolding, setNewHolding] = useState({
     symbol: "",
     name: "",
@@ -66,6 +67,54 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
     }
   };
 
+  const getCompanyLogo = (symbol: string) => {
+    // Using real company logo URLs for major companies
+    const logoMap: { [key: string]: string } = {
+      'AAPL': 'https://logo.clearbit.com/apple.com',
+      'MSFT': 'https://logo.clearbit.com/microsoft.com',
+      'GOOGL': 'https://logo.clearbit.com/google.com',
+      'GOOG': 'https://logo.clearbit.com/google.com',
+      'AMZN': 'https://logo.clearbit.com/amazon.com',
+      'TSLA': 'https://logo.clearbit.com/tesla.com',
+      'META': 'https://logo.clearbit.com/meta.com',
+      'NVDA': 'https://logo.clearbit.com/nvidia.com',
+      'NFLX': 'https://logo.clearbit.com/netflix.com',
+      'SPOT': 'https://logo.clearbit.com/spotify.com',
+      'GME': 'https://logo.clearbit.com/gamestop.com',
+      'JPM': 'https://logo.clearbit.com/jpmorganchase.com',
+      'NKE': 'https://logo.clearbit.com/nike.com',
+      'V': 'https://logo.clearbit.com/visa.com',
+      'MA': 'https://logo.clearbit.com/mastercard.com',
+      'DIS': 'https://logo.clearbit.com/disney.com',
+      'PYPL': 'https://logo.clearbit.com/paypal.com',
+      'ADBE': 'https://logo.clearbit.com/adobe.com',
+      'CRM': 'https://logo.clearbit.com/salesforce.com',
+      'INTC': 'https://logo.clearbit.com/intel.com',
+      'AMD': 'https://logo.clearbit.com/amd.com',
+      'COIN': 'https://logo.clearbit.com/coinbase.com',
+      'SQ': 'https://logo.clearbit.com/squareup.com',
+      'UBER': 'https://logo.clearbit.com/uber.com',
+      'LYFT': 'https://logo.clearbit.com/lyft.com',
+      'TWTR': 'https://logo.clearbit.com/twitter.com',
+      'SNAP': 'https://logo.clearbit.com/snap.com',
+      'PINS': 'https://logo.clearbit.com/pinterest.com',
+      'ROKU': 'https://logo.clearbit.com/roku.com',
+      'ZM': 'https://logo.clearbit.com/zoom.us',
+      'SHOP': 'https://logo.clearbit.com/shopify.com',
+      'DDOG': 'https://logo.clearbit.com/datadoghq.com',
+      'SNOW': 'https://logo.clearbit.com/snowflake.com',
+      'PLTR': 'https://logo.clearbit.com/palantir.com',
+      'RBLX': 'https://logo.clearbit.com/roblox.com',
+      'HOOD': 'https://logo.clearbit.com/robinhood.com',
+      'PATH': 'https://logo.clearbit.com/uipath.com',
+      'DOCU': 'https://logo.clearbit.com/docusign.com',
+      'OKTA': 'https://logo.clearbit.com/okta.com',
+      'CRWD': 'https://logo.clearbit.com/crowdstrike.com'
+    };
+    
+    return logoMap[symbol.toUpperCase()] || `https://logo.clearbit.com/${symbol.toLowerCase()}.com`;
+  };
+
   const getCompanyInitial = (symbol: string) => {
     return symbol.charAt(0).toUpperCase();
   };
@@ -73,13 +122,23 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
   const getGradientClass = (symbol: string) => {
     const gradients = [
       "from-blue-500 to-purple-600",
-      "from-green-500 to-teal-600",
+      "from-green-500 to-teal-600", 
       "from-red-500 to-pink-600",
       "from-yellow-500 to-orange-600",
       "from-purple-500 to-indigo-600"
     ];
     const index = symbol.length % gradients.length;
     return gradients[index];
+  };
+
+  const sortedHoldings = [...holdings].sort((a, b) => {
+    const aValue = parseFloat(a.totalValue);
+    const bValue = parseFloat(b.totalValue);
+    return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
+  });
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
   };
 
   if (isLoading) {
@@ -105,13 +164,14 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold">Your Holdings</CardTitle>
           <div className="flex space-x-2">
-            <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-dark-tertiary">
-              <Filter className="h-4 w-4 mr-1" />
-              Filter
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-dark-tertiary">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-gray-300 hover:text-white hover:bg-dark-tertiary"
+              onClick={toggleSort}
+            >
               <ArrowUpDown className="h-4 w-4 mr-1" />
-              Sort
+              Sort {sortOrder === 'desc' ? '(High to Low)' : '(Low to High)'}
             </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
@@ -201,7 +261,7 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
               </tr>
             </thead>
             <tbody>
-              {holdings.map((holding) => {
+              {sortedHoldings.map((holding) => {
                 const gainLoss = parseFloat(holding.gainLoss);
                 const gainLossPercent = parseFloat(holding.gainLossPercent);
                 const isPositive = gainLoss >= 0;
@@ -210,8 +270,22 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
                   <tr key={holding.id} className="border-b border-gray-800 hover:bg-dark-tertiary/50 transition-colors">
                     <td className="py-4">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-8 h-8 bg-gradient-to-r ${getGradientClass(holding.symbol)} rounded-full flex items-center justify-center text-sm font-bold`}>
-                          {getCompanyInitial(holding.symbol)}
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center">
+                          <img 
+                            src={getCompanyLogo(holding.symbol)} 
+                            alt={`${holding.symbol} logo`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              // Fallback to gradient background with initial
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.className = `w-8 h-8 bg-gradient-to-r ${getGradientClass(holding.symbol)} rounded-full flex items-center justify-center text-sm font-bold`;
+                                parent.innerHTML = getCompanyInitial(holding.symbol);
+                              }
+                            }}
+                          />
                         </div>
                         <div>
                           <p className="font-medium">{holding.symbol}</p>
