@@ -1,14 +1,15 @@
 import { 
-  users, portfolios, holdings, stockPrices, aiInsights, marketNews,
+  users, portfolios, holdings, stockPrices, aiInsights, marketNews, portfolioHistory,
   type User, type InsertUser,
   type Portfolio, type InsertPortfolio,
   type Holding, type InsertHolding,
   type StockPrice, type InsertStockPrice,
   type AIInsight, type InsertAIInsight,
-  type MarketNews, type InsertMarketNews
+  type MarketNews, type InsertMarketNews,
+  type PortfolioHistory, type InsertPortfolioHistory
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc, gte } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -45,6 +46,10 @@ export interface IStorage {
   getLatestMarketNews(limit?: number): Promise<MarketNews[]>;
   getMarketNewsBySymbols(symbols: string[], limit?: number): Promise<MarketNews[]>;
   createMarketNews(news: InsertMarketNews): Promise<MarketNews>;
+
+  // Portfolio history operations
+  getPortfolioHistory(portfolioId: number, period?: string): Promise<PortfolioHistory[]>;
+  createPortfolioHistory(history: InsertPortfolioHistory): Promise<PortfolioHistory>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -313,16 +318,52 @@ export class DatabaseStorage implements IStorage {
 
   // Market news operations
   async getLatestMarketNews(limit: number = 10): Promise<MarketNews[]> {
-    return await db.select().from(marketNews).limit(limit);
+    return await db.select().from(marketNews)
+      .orderBy(desc(marketNews.createdAt))
+      .limit(limit);
   }
 
   async getMarketNewsBySymbols(symbols: string[], limit: number = 10): Promise<MarketNews[]> {
-    return await db.select().from(marketNews).limit(limit);
+    return await db.select().from(marketNews)
+      .orderBy(desc(marketNews.createdAt))
+      .limit(limit);
   }
 
   async createMarketNews(insertNews: InsertMarketNews): Promise<MarketNews> {
     const [news] = await db.insert(marketNews).values(insertNews).returning();
     return news;
+  }
+
+  // Portfolio history operations
+  async getPortfolioHistory(portfolioId: number, period: string = "1d"): Promise<PortfolioHistory[]> {
+    const cutoffDate = new Date();
+    switch (period) {
+      case "1d":
+        cutoffDate.setDate(cutoffDate.getDate() - 1);
+        break;
+      case "1w":
+        cutoffDate.setDate(cutoffDate.getDate() - 7);
+        break;
+      case "1m":
+        cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+        break;
+      case "3m":
+        cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+        break;
+      case "1y":
+        cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+        break;
+    }
+
+    return await db.select()
+      .from(portfolioHistory)
+      .where(eq(portfolioHistory.portfolioId, portfolioId))
+      .orderBy(portfolioHistory.timestamp);
+  }
+
+  async createPortfolioHistory(insertHistory: InsertPortfolioHistory): Promise<PortfolioHistory> {
+    const [history] = await db.insert(portfolioHistory).values(insertHistory).returning();
+    return history;
   }
 }
 
