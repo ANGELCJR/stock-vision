@@ -9,8 +9,13 @@ import { Link, useLocation } from "wouter";
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebounce(searchQuery, 300);
-  const { data: searchResults = [] } = useStockSearch(debouncedQuery);
-  const [location] = useLocation();
+  const { data: searchResults = [], isLoading: isSearching } = useStockSearch(debouncedQuery);
+  const [location, setLocation] = useLocation();
+
+  const handleStockClick = (symbol: string) => {
+    setLocation(`/stock/${symbol}`);
+    setSearchQuery("");
+  };
 
   const handleExport = () => {
     // Create CSV export functionality
@@ -72,18 +77,46 @@ export default function Header() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-dark-tertiary text-white pl-10 pr-4 py-2 w-64 border-gray-600 focus:border-blue-500 focus:ring-blue-500"
               />
-              {searchResults.length > 0 && searchQuery && (
-                <div className="absolute top-full left-0 right-0 bg-dark-secondary border border-gray-600 rounded-lg mt-1 max-h-60 overflow-y-auto z-50">
-                  {searchResults.map((result) => (
-                    <div
-                      key={result.symbol}
-                      className="px-4 py-2 hover:bg-dark-tertiary cursor-pointer"
-                      onClick={() => setSearchQuery("")}
-                    >
-                      <div className="font-medium">{result.symbol}</div>
-                      <div className="text-sm text-gray-400">{result.name}</div>
+              {(searchResults.length > 0 || isSearching) && searchQuery.length >= 2 && (
+                <div className="absolute top-full left-0 right-0 bg-dark-secondary border border-gray-600 rounded-lg mt-1 max-h-60 overflow-y-auto z-50 shadow-lg">
+                  {isSearching && (
+                    <div className="px-4 py-3 text-center">
+                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2" />
+                      <div className="text-sm text-gray-400">Searching...</div>
                     </div>
-                  ))}
+                  )}
+                  
+                  {!isSearching && searchResults.length > 0 && (
+                    <>
+                      <div className="px-4 py-2 border-b border-gray-600">
+                        <div className="text-xs text-gray-400">Click to view details and purchase:</div>
+                      </div>
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.symbol}
+                          className="w-full px-4 py-3 hover:bg-dark-tertiary cursor-pointer text-left transition-colors border-b border-gray-700 last:border-b-0"
+                          onClick={() => handleStockClick(result.symbol)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold text-white">{result.symbol}</div>
+                              <div className="text-sm text-gray-300 truncate">{result.name}</div>
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Click to buy →
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  
+                  {!isSearching && searchResults.length === 0 && searchQuery.length >= 2 && (
+                    <div className="px-4 py-3 text-center">
+                      <div className="text-gray-400">No stocks found for "{searchQuery}"</div>
+                      <div className="text-xs text-gray-500 mt-1">Try a different search term</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
