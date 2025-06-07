@@ -1,4 +1,4 @@
-import { Plus, Scale, Bell, FileText, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -64,40 +64,6 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
     setIsSearchDialogOpen(false);
     setSearchQuery("");
   };
-
-  const handleAction = (action: string) => {
-    toast({
-      title: "Feature Coming Soon",
-      description: `${action} functionality will be available in the next update.`
-    });
-  };
-
-  const actions = [
-    {
-      icon: Search,
-      label: "Search & Buy Stocks",
-      onClick: () => setIsSearchDialogOpen(true),
-      className: "bg-green-600 hover:bg-green-700 text-white"
-    },
-    {
-      icon: Scale,
-      label: "Rebalance Portfolio",
-      onClick: () => handleAction("Rebalance Portfolio"),
-      className: "bg-dark-tertiary hover:bg-gray-600 text-white"
-    },
-    {
-      icon: Bell,
-      label: "Set Price Alerts",
-      onClick: () => handleAction("Set Price Alerts"),
-      className: "bg-dark-tertiary hover:bg-gray-600 text-white"
-    },
-    {
-      icon: FileText,
-      label: "Generate Tax Report",
-      onClick: () => handleAction("Generate Tax Report"),
-      className: "bg-dark-tertiary hover:bg-gray-600 text-white"
-    }
-  ];
 
   return (
     <Card className="bg-dark-secondary border-gray-700 animate-fade-in">
@@ -245,17 +211,6 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
               </div>
             </DialogContent>
           </Dialog>
-          
-          {actions.slice(1).map((action, index) => (
-            <Button
-              key={index}
-              onClick={action.onClick}
-              className={`w-full py-3 transition-colors flex items-center justify-center space-x-2 ${action.className}`}
-            >
-              <action.icon className="h-4 w-4" />
-              <span>{action.label}</span>
-            </Button>
-          ))}
         </div>
       </CardContent>
     </Card>
