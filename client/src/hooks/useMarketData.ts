@@ -23,8 +23,8 @@ export function useStockHistory(symbol: string, period: string = "1d") {
 
 export function useStockSearch(query: string) {
   return useQuery<SearchResult[]>({
-    queryKey: ["/api/search", query],
-    enabled: query.length > 0,
+    queryKey: [`/api/search?q=${encodeURIComponent(query)}`],
+    enabled: query.length >= 2,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 }
