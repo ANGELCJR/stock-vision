@@ -34,6 +34,7 @@ export const holdings = pgTable("holdings", {
   totalValue: decimal("total_value", { precision: 12, scale: 2 }).notNull().default('0'),
   gainLoss: decimal("gain_loss", { precision: 12, scale: 2 }).notNull().default('0'),
   gainLossPercent: decimal("gain_loss_percent", { precision: 8, scale: 4 }).notNull().default('0'),
+  createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -67,6 +68,14 @@ export const marketNews = pgTable("market_news", {
   url: text("url").notNull(),
   publishedAt: timestamp("published_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const portfolioHistory = pgTable("portfolio_history", {
+  id: serial("id").primaryKey(),
+  portfolioId: integer("portfolio_id").notNull(),
+  totalValue: decimal("total_value", { precision: 12, scale: 2 }).notNull(),
+  totalGainLoss: decimal("total_gain_loss", { precision: 12, scale: 2 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
 // Insert schemas
@@ -114,6 +123,12 @@ export const insertMarketNewsSchema = createInsertSchema(marketNews).pick({
   publishedAt: true,
 });
 
+export const insertPortfolioHistorySchema = createInsertSchema(portfolioHistory).pick({
+  portfolioId: true,
+  totalValue: true,
+  totalGainLoss: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -132,3 +147,6 @@ export type AIInsight = typeof aiInsights.$inferSelect;
 
 export type InsertMarketNews = z.infer<typeof insertMarketNewsSchema>;
 export type MarketNews = typeof marketNews.$inferSelect;
+
+export type InsertPortfolioHistory = z.infer<typeof insertPortfolioHistorySchema>;
+export type PortfolioHistory = typeof portfolioHistory.$inferSelect;
