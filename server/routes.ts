@@ -7,6 +7,33 @@ import { fetchMarketNews } from "./services/newsService";
 import { insertHoldingSchema, insertPortfolioSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Function to recalculate portfolio totals based on holdings
+  async function updatePortfolioTotals(portfolioId: number) {
+    const holdings = await storage.getHoldingsByPortfolioId(portfolioId);
+    
+    if (holdings.length === 0) {
+      // No holdings - set values to 0
+      await storage.updatePortfolio(portfolioId, {
+        totalValue: "0",
+        totalGainLoss: "0"
+      });
+      return;
+    }
+
+    let totalValue = 0;
+    let totalGainLoss = 0;
+
+    for (const holding of holdings) {
+      totalValue += parseFloat(holding.totalValue || "0");
+      totalGainLoss += parseFloat(holding.gainLoss || "0");
+    }
+
+    await storage.updatePortfolio(portfolioId, {
+      totalValue: totalValue.toString(),
+      totalGainLoss: totalGainLoss.toString()
+    });
+  }
+
   // Portfolio routes
   app.get("/api/portfolios", async (req, res) => {
     try {
@@ -89,16 +116,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updatedHoldings = await storage.getHoldingsByPortfolioId(portfolioId);
         
         // Update portfolio totals
-        const totalValue = updatedHoldings.reduce((sum, h) => sum + parseFloat(h.totalValue), 0);
-        const totalGainLoss = updatedHoldings.reduce((sum, h) => sum + parseFloat(h.gainLoss), 0);
-        
-        await storage.updatePortfolio(portfolioId, {
-          totalValue: totalValue.toString(),
-          totalGainLoss: totalGainLoss.toString()
-        });
+        await updatePortfolioTotals(portfolioId);
 
         res.json(updatedHoldings);
       } else {
+        // Ensure portfolio totals are 0 when no holdings
+        await updatePortfolioTotals(portfolioId);
         res.json(holdings);
       }
     } catch (error) {
@@ -135,6 +158,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gainLossPercent: gainLossPercent.toString()
       });
 
+      // Recalculate portfolio totals after adding holding
+      await updatePortfolioTotals(portfolioId);
+
       res.json(updatedHolding);
     } catch (error) {
       console.error("Error creating holding:", error);
@@ -145,8 +171,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/holdings/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Get holding to find portfolioId before deletion
+      const holding = await storage.getHolding(id);
+      if (!holding) {
+        return res.status(404).json({ error: "Holding not found" });
+      }
+      
+      const portfolioId = holding.portfolioId;
       const success = await storage.deleteHolding(id);
+      
       if (success) {
+        // Recalculate portfolio totals after deletion
+        await updatePortfolioTotals(portfolioId);
         res.json({ success: true });
       } else {
         res.status(404).json({ error: "Holding not found" });
@@ -182,8 +219,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch historical data" });
     }
   });
-
-
 
   // Market news routes
   app.get("/api/news", async (req, res) => {
