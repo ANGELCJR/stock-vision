@@ -63,37 +63,7 @@ export async function getStockData(symbol: string): Promise<StockData | null> {
 }
 
 export async function getHistoricalData(symbol: string, period: string): Promise<HistoricalDataPoint[]> {
-  return getMockHistoricalData(symbol, period);
-}
-
-function getMockHistoricalData(symbol: string, period: string): HistoricalDataPoint[] {
-  const basePrice = 150;
-  const points = period === "1d" ? 78 : period === "1w" ? 7 : period === "1m" ? 30 : 365;
-  const intervalMs = period === "1d" ? 5 * 60 * 1000 : 24 * 60 * 60 * 1000;
-  
-  const data: HistoricalDataPoint[] = [];
-  let currentPrice = basePrice * 0.95;
-  
-  for (let i = 0; i < points; i++) {
-    const variance = (Math.random() - 0.5) * 0.03;
-    const open = currentPrice;
-    const close = currentPrice * (1 + variance);
-    const high = Math.max(open, close) * (1 + Math.random() * 0.02);
-    const low = Math.min(open, close) * (1 - Math.random() * 0.02);
-    
-    data.push({
-      timestamp: new Date(Date.now() - (points - i) * intervalMs),
-      open,
-      high,
-      low,
-      close,
-      volume: Math.floor(Math.random() * 10000000) + 1000000
-    });
-    
-    currentPrice = close;
-  }
-  
-  return data;
+  return [];
 }
 
 export function getCompanyName(symbol: string): string {
