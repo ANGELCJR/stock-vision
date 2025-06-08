@@ -211,15 +211,13 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeNews() {
     try {
-      // Check if we have recent news (within last 4 hours)
-      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
-      const recentNews = await db.select()
+      // Check if we have any news at all first
+      const existingNews = await db.select()
         .from(marketNews)
-        .where(gte(marketNews.publishedAt, fourHoursAgo))
         .limit(1);
 
-      if (recentNews.length === 0) {
-        console.log("Fetching fresh market news...");
+      if (existingNews.length === 0) {
+        console.log("No news found in database, fetching fresh market news...");
         const { fetchMarketNews } = await import("./services/newsService");
         const freshNews = await fetchMarketNews();
         
@@ -234,6 +232,8 @@ export class DatabaseStorage implements IStorage {
           }
           console.log(`Stored ${freshNews.length} fresh news articles`);
         }
+      } else {
+        console.log("News already exists in database");
       }
     } catch (error) {
       console.error("Error initializing news:", error);
@@ -354,16 +354,16 @@ export class DatabaseStorage implements IStorage {
     await db.delete(aiInsights).where(eq(aiInsights.portfolioId, portfolioId));
   }
 
-  // Market news operations
+  // Market news operations - FIXED TO USE publishedAt INSTEAD OF createdAt
   async getLatestMarketNews(limit: number = 10): Promise<MarketNews[]> {
     return await db.select().from(marketNews)
-      .orderBy(desc(marketNews.createdAt))
+      .orderBy(desc(marketNews.publishedAt))
       .limit(limit);
   }
 
   async getMarketNewsBySymbols(symbols: string[], limit: number = 10): Promise<MarketNews[]> {
     return await db.select().from(marketNews)
-      .orderBy(desc(marketNews.createdAt))
+      .orderBy(desc(marketNews.publishedAt))
       .limit(limit);
   }
 
