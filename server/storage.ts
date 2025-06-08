@@ -1,28 +1,40 @@
-import { 
-  users, portfolios, holdings, stockPrices, aiInsights, marketNews, portfolioHistory,
-  type User, type InsertUser,
-  type Portfolio, type InsertPortfolio,
-  type Holding, type InsertHolding,
-  type StockPrice, type InsertStockPrice,
-  type AIInsight, type InsertAIInsight,
-  type MarketNews, type InsertMarketNews,
-  type PortfolioHistory, type InsertPortfolioHistory
+import {
+  users,
+  portfolios,
+  holdings,
+  stockPrices,
+  aiInsights,
+  marketNews,
+  portfolioHistory,
+  type User,
+  type UpsertUser,
+  type Portfolio,
+  type InsertPortfolio,
+  type Holding,
+  type InsertHolding,
+  type StockPrice,
+  type InsertStockPrice,
+  type AIInsight,
+  type InsertAIInsight,
+  type MarketNews,
+  type InsertMarketNews,
+  type PortfolioHistory,
+  type InsertPortfolioHistory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, gte } from "drizzle-orm";
+import { eq, desc, gte, inArray } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
+  // User operations for session-based auth
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Portfolio operations
-  getPortfoliosByUserId(userId: number): Promise<Portfolio[]>;
+  getPortfoliosByUserId(userId: string): Promise<Portfolio[]>;
   getPortfolio(id: number): Promise<Portfolio | undefined>;
   createPortfolio(portfolio: InsertPortfolio): Promise<Portfolio>;
   updatePortfolio(id: number, updates: Partial<Portfolio>): Promise<Portfolio | undefined>;
+  getOrCreateUserPortfolio(userId: string): Promise<Portfolio>;
 
   // Holdings operations
   getHoldingsByPortfolioId(portfolioId: number): Promise<Holding[]>;
@@ -53,188 +65,48 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  constructor() {
-    // Initialize with sample data on first run
-    this.initializeDefaultData();
-  }
-
-  private async initializeDefaultData() {
-    try {
-      // Check if data already exists
-      const existingUser = await db.select().from(users).limit(1);
-      if (existingUser.length > 0) return;
-
-      // Create default user
-      const [defaultUser] = await db.insert(users).values({
-        username: "demo",
-        password: "demo123"
-      }).returning();
-
-      // Create default portfolio
-      const [defaultPortfolio] = await db.insert(portfolios).values({
-        userId: defaultUser.id,
-        name: "Main Portfolio",
-        totalValue: "127845.32",
-        totalGainLoss: "18945.78",
-        riskScore: "6.7"
-      }).returning();
-
-      // Create sample holdings
-      const sampleHoldings = [
-        {
-          portfolioId: defaultPortfolio.id,
-          symbol: "AAPL",
-          name: "Apple Inc.",
-          shares: "50.0000",
-          avgPrice: "155.20"
-        },
-        {
-          portfolioId: defaultPortfolio.id,
-          symbol: "NVDA",
-          name: "NVIDIA Corporation", 
-          shares: "25.0000",
-          avgPrice: "750.45"
-        },
-        {
-          portfolioId: defaultPortfolio.id,
-          symbol: "TSLA",
-          name: "Tesla, Inc.",
-          shares: "15.0000",
-          avgPrice: "265.30"
-        },
-        {
-          portfolioId: defaultPortfolio.id,
-          symbol: "GOOGL",
-          name: "Alphabet Inc.",
-          shares: "30.0000",
-          avgPrice: "132.80"
-        },
-        {
-          portfolioId: defaultPortfolio.id,
-          symbol: "MSFT",
-          name: "Microsoft Corporation",
-          shares: "20.0000",
-          avgPrice: "398.60"
-        }
-      ];
-
-      await db.insert(holdings).values(sampleHoldings);
-
-      // Create sample market news
-      const sampleNews = [
-        {
-          title: "NVIDIA Reports Record Q4 Earnings, Beats Expectations",
-          summary: "Strong AI chip demand drives revenue growth of 45% year-over-year, with data center revenue reaching new highs.",
-          sentiment: "bullish" as const,
-          relevantSymbols: ["NVDA", "AMD"],
-          source: "MarketWatch",
-          url: "https://example.com/nvidia-earnings",
-          publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
-        },
-        {
-          title: "Apple Announces New Smart Features for iPhone",
-          summary: "Tech giant reveals comprehensive smart technology integration across iOS ecosystem, potentially boosting hardware sales.",
-          sentiment: "bullish" as const,
-          relevantSymbols: ["AAPL"],
-          source: "TechCrunch",
-          url: "https://example.com/apple-smart-features",
-          publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000)
-        },
-        {
-          title: "Tesla Faces Production Challenges in Q4",
-          summary: "Electric vehicle manufacturer reports lower than expected delivery numbers amid supply chain constraints.",
-          sentiment: "bearish" as const,
-          relevantSymbols: ["TSLA"],
-          source: "Reuters",
-          url: "https://example.com/tesla-production",
-          publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
-        },
-        {
-          title: "Microsoft Cloud Revenue Surges 25% in Latest Quarter",
-          summary: "Azure and productivity software drive strong quarterly performance, exceeding analyst expectations.",
-          sentiment: "bullish" as const,
-          relevantSymbols: ["MSFT"],
-          source: "CNBC",
-          url: "https://example.com/microsoft-cloud",
-          publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000)
-        },
-        {
-          title: "Alphabet Reports Strong Search and Cloud Growth",
-          summary: "Google parent company shows resilient performance across key business segments despite market headwinds.",
-          sentiment: "bullish" as const,
-          relevantSymbols: ["GOOGL"],
-          source: "Bloomberg",
-          url: "https://example.com/alphabet-earnings",
-          publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-        }
-      ];
-
-      await db.insert(marketNews).values(sampleNews);
-
-      // Create sample AI insights
-      const sampleInsights = [
-        {
-          portfolioId: defaultPortfolio.id,
-          type: "opportunity" as const,
-          title: "Sector Diversification Opportunity",
-          description: "Your portfolio is heavily weighted in technology (68%). Consider adding healthcare, energy, or financial sector exposure to reduce concentration risk.",
-          confidence: "0.87"
-        },
-        {
-          portfolioId: defaultPortfolio.id,
-          type: "risk" as const,
-          title: "High Concentration Risk Detected",
-          description: "NVIDIA represents 31% of your portfolio value. Consider rebalancing to limit single-stock exposure to 15-20% maximum.",
-          confidence: "0.92"
-        },
-        {
-          portfolioId: defaultPortfolio.id,
-          type: "trend" as const,
-          title: "AI Sector Momentum Continues",
-          description: "Your AI-focused holdings (NVDA, AAPL, GOOGL) are benefiting from strong sector tailwinds. Monitor for profit-taking opportunities.",
-          confidence: "0.84"
-        }
-      ];
-
-      await db.insert(aiInsights).values(sampleInsights);
-    } catch (error) {
-      console.error("Error initializing default data:", error);
-    }
-  }
-
   // User operations
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
-  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+  async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
       .returning();
-    return user || undefined;
+    return user;
   }
 
-  // Portfolio operations
-  async getPortfoliosByUserId(userId: number): Promise<Portfolio[]> {
+  async getOrCreateUserPortfolio(userId: string): Promise<Portfolio> {
+    // Check if user already has a portfolio
+    const existingPortfolios = await this.getPortfoliosByUserId(userId);
+    if (existingPortfolios.length > 0) {
+      return existingPortfolios[0];
+    }
+
+    // Create new portfolio for user
+    return this.createPortfolio({
+      userId,
+      name: "My Portfolio"
+    });
+  }
+
+  async getPortfoliosByUserId(userId: string): Promise<Portfolio[]> {
     return await db.select().from(portfolios).where(eq(portfolios.userId, userId));
   }
 
   async getPortfolio(id: number): Promise<Portfolio | undefined> {
     const [portfolio] = await db.select().from(portfolios).where(eq(portfolios.id, id));
-    return portfolio || undefined;
+    return portfolio;
   }
 
   async createPortfolio(insertPortfolio: InsertPortfolio): Promise<Portfolio> {
@@ -243,11 +115,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePortfolio(id: number, updates: Partial<Portfolio>): Promise<Portfolio | undefined> {
-    const [portfolio] = await db.update(portfolios)
+    const [portfolio] = await db
+      .update(portfolios)
       .set(updates)
       .where(eq(portfolios.id, id))
       .returning();
-    return portfolio || undefined;
+    return portfolio;
   }
 
   // Holdings operations
@@ -257,7 +130,7 @@ export class DatabaseStorage implements IStorage {
 
   async getHolding(id: number): Promise<Holding | undefined> {
     const [holding] = await db.select().from(holdings).where(eq(holdings.id, id));
-    return holding || undefined;
+    return holding;
   }
 
   async createHolding(insertHolding: InsertHolding): Promise<Holding> {
@@ -266,27 +139,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateHolding(id: number, updates: Partial<Holding>): Promise<Holding | undefined> {
-    const [holding] = await db.update(holdings)
-      .set(updates)
+    const [holding] = await db
+      .update(holdings)
+      .set({ ...updates, updatedAt: new Date() })
       .where(eq(holdings.id, id))
       .returning();
-    return holding || undefined;
+    return holding;
   }
 
   async deleteHolding(id: number): Promise<boolean> {
     const result = await db.delete(holdings).where(eq(holdings.id, id));
-    return (result.rowCount || 0) > 0;
+    return result.rowCount > 0;
   }
 
   // Stock price operations
   async getStockPrice(symbol: string): Promise<StockPrice | undefined> {
     const [stockPrice] = await db.select().from(stockPrices).where(eq(stockPrices.symbol, symbol));
-    return stockPrice || undefined;
+    return stockPrice;
   }
 
   async getLatestStockPrices(symbols: string[]): Promise<StockPrice[]> {
-    if (symbols.length === 0) return [];
-    return await db.select().from(stockPrices);
+    return await db.select().from(stockPrices).where(inArray(stockPrices.symbol, symbols));
   }
 
   async createStockPrice(insertStockPrice: InsertStockPrice): Promise<StockPrice> {
@@ -295,11 +168,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateStockPrice(symbol: string, updates: Partial<StockPrice>): Promise<StockPrice | undefined> {
-    const [stockPrice] = await db.update(stockPrices)
-      .set(updates)
+    const [stockPrice] = await db
+      .update(stockPrices)
+      .set({ ...updates, timestamp: new Date() })
       .where(eq(stockPrices.symbol, symbol))
       .returning();
-    return stockPrice || undefined;
+    return stockPrice;
   }
 
   // AI insights operations
@@ -318,15 +192,11 @@ export class DatabaseStorage implements IStorage {
 
   // Market news operations
   async getLatestMarketNews(limit: number = 10): Promise<MarketNews[]> {
-    return await db.select().from(marketNews)
-      .orderBy(desc(marketNews.createdAt))
-      .limit(limit);
+    return await db.select().from(marketNews).orderBy(desc(marketNews.publishedAt)).limit(limit);
   }
 
   async getMarketNewsBySymbols(symbols: string[], limit: number = 10): Promise<MarketNews[]> {
-    return await db.select().from(marketNews)
-      .orderBy(desc(marketNews.createdAt))
-      .limit(limit);
+    return await db.select().from(marketNews).limit(limit);
   }
 
   async createMarketNews(insertNews: InsertMarketNews): Promise<MarketNews> {
@@ -336,29 +206,7 @@ export class DatabaseStorage implements IStorage {
 
   // Portfolio history operations
   async getPortfolioHistory(portfolioId: number, period: string = "1d"): Promise<PortfolioHistory[]> {
-    const cutoffDate = new Date();
-    switch (period) {
-      case "1d":
-        cutoffDate.setDate(cutoffDate.getDate() - 1);
-        break;
-      case "1w":
-        cutoffDate.setDate(cutoffDate.getDate() - 7);
-        break;
-      case "1m":
-        cutoffDate.setMonth(cutoffDate.getMonth() - 1);
-        break;
-      case "3m":
-        cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-        break;
-      case "1y":
-        cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
-        break;
-    }
-
-    return await db.select()
-      .from(portfolioHistory)
-      .where(eq(portfolioHistory.portfolioId, portfolioId))
-      .orderBy(portfolioHistory.timestamp);
+    return await db.select().from(portfolioHistory).where(eq(portfolioHistory.portfolioId, portfolioId));
   }
 
   async createPortfolioHistory(insertHistory: InsertPortfolioHistory): Promise<PortfolioHistory> {

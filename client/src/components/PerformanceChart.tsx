@@ -16,125 +16,194 @@ import {
 } from "recharts";
 
 interface PerformanceChartProps {
-  portfolioId: number;
+  portfolioId?: number;
 }
 
 const timePeriods = [
   { label: "1D", value: "1d" },
   { label: "1W", value: "1w" },
   { label: "1M", value: "1m" },
-  { label: "3M", value: "3m" },
   { label: "1Y", value: "1y" }
 ];
 
 export default function PerformanceChart({ portfolioId }: PerformanceChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("1d");
+  const [chartType, setChartType] = useState<"line" | "area">("area");
+  
   const { data: performanceData = [], isLoading } = usePortfolioPerformance(portfolioId, selectedPeriod);
   const { data: holdings = [] } = useHoldings(portfolioId);
-  
-  const hasHoldings = holdings.length > 0;
-
-  const formatTooltipValue = (value: number) => {
-    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  const formatXAxisLabel = (tickItem: string) => {
-    const date = new Date(tickItem);
-    if (selectedPeriod === "1d") {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
 
   if (isLoading) {
     return (
-      <Card className="bg-dark-secondary border-gray-700">
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold">Portfolio Performance</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Portfolio Performance</CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-80 w-full bg-gray-700" />
+          <Skeleton className="h-80 w-full bg-gray-200 dark:bg-gray-700" />
         </CardContent>
       </Card>
     );
   }
 
+  const formatTooltipValue = (value: number, name: string) => {
+    if (name === "totalValue") {
+      return [`$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "Portfolio Value"];
+    }
+    if (name === "totalGainLoss") {
+      return [`${value >= 0 ? '+' : ''}$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "Gain/Loss"];
+    }
+    return [value, name];
+  };
+
+  const formatXAxisTick = (timestamp: string) => {
+    const date = new Date(timestamp);
+    if (selectedPeriod === "1d") {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   return (
-    <Card className="bg-dark-secondary border-gray-700 animate-fade-in">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-semibold">Portfolio Performance</CardTitle>
-            <p className="text-gray-400 text-sm">Real-time portfolio tracking</p>
-          </div>
-          <div className="flex space-x-2">
+    <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardTitle className="text-gray-900 dark:text-white">Portfolio Performance</CardTitle>
+        <div className="flex space-x-2">
+          <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 p-1 bg-gray-50 dark:bg-gray-700">
             {timePeriods.map((period) => (
               <Button
                 key={period.value}
                 variant={selectedPeriod === period.value ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setSelectedPeriod(period.value)}
-                className={
+                className={`px-3 py-1 text-sm ${
                   selectedPeriod === period.value
                     ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "text-gray-400 hover:text-white hover:bg-dark-tertiary"
-                }
+                    : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                }`}
               >
                 {period.label}
               </Button>
             ))}
           </div>
+          <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 p-1 bg-gray-50 dark:bg-gray-700">
+            <Button
+              variant={chartType === "area" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setChartType("area")}
+              className={`px-3 py-1 text-sm ${
+                chartType === "area"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+              }`}
+            >
+              Area
+            </Button>
+            <Button
+              variant={chartType === "line" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setChartType("line")}
+              className={`px-3 py-1 text-sm ${
+                chartType === "line"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+              }`}
+            >
+              Line
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {!hasHoldings ? (
-          <div className="h-80 w-full flex items-center justify-center border-2 border-dashed border-gray-600 rounded-lg">
-            <div className="text-center">
-              <div className="text-gray-400 text-lg mb-2">No holdings found</div>
-              <div className="text-gray-500 text-sm">Add your first stock to see performance tracking</div>
-            </div>
+        {holdings.length === 0 ? (
+          <div className="flex items-center justify-center h-80">
+            <p className="text-gray-500 dark:text-gray-400">Add stocks to your portfolio to see performance data</p>
+          </div>
+        ) : performanceData.length === 0 ? (
+          <div className="flex items-center justify-center h-80">
+            <p className="text-gray-500 dark:text-gray-400">No performance data available</p>
           </div>
         ) : (
-          <div className="h-80 w-full chart-container">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="timestamp"
-                  tickFormatter={formatXAxisLabel}
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                />
-                <YAxis 
-                  tickFormatter={(value) => `$${value.toLocaleString()}`}
-                  stroke="#9CA3AF"
-                  fontSize={12}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1F2937',
-                    border: '1px solid #374151',
-                    borderRadius: '8px',
-                    color: '#F9FAFB'
-                  }}
-                  formatter={(value: any) => [formatTooltipValue(value), 'Portfolio Value']}
-                  labelFormatter={(label) => new Date(label).toLocaleString()}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  fill="url(#colorValue)"
-                />
-              </AreaChart>
+              {chartType === "area" ? (
+                <AreaChart data={performanceData}>
+                  <defs>
+                    <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-600" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={formatXAxisTick}
+                    stroke="#6B7280"
+                    className="dark:stroke-gray-400"
+                  />
+                  <YAxis 
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                    stroke="#6B7280"
+                    className="dark:stroke-gray-400"
+                  />
+                  <Tooltip 
+                    formatter={formatTooltipValue}
+                    labelFormatter={(label) => new Date(label).toLocaleString()}
+                    contentStyle={{
+                      backgroundColor: 'var(--background)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      color: 'var(--foreground)'
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="totalValue"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                    fill="url(#portfolioGradient)"
+                  />
+                </AreaChart>
+              ) : (
+                <LineChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-600" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={formatXAxisTick}
+                    stroke="#6B7280"
+                    className="dark:stroke-gray-400"
+                  />
+                  <YAxis 
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                    stroke="#6B7280"
+                    className="dark:stroke-gray-400"
+                  />
+                  <Tooltip 
+                    formatter={formatTooltipValue}
+                    labelFormatter={(label) => new Date(label).toLocaleString()}
+                    contentStyle={{
+                      backgroundColor: 'var(--background)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      color: 'var(--foreground)'
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="totalValue"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="totalGainLoss"
+                    stroke="#10B981"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              )}
             </ResponsiveContainer>
           </div>
         )}
