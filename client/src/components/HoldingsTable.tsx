@@ -57,12 +57,12 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
     }
   };
 
-  const handleDeleteHolding = async (holdingId: number) => {
+  const handleDeleteHolding = async (holdingId: number, symbol: string) => {
     try {
       await deleteHolding.mutateAsync(holdingId);
       toast({
         title: "Success",
-        description: "Stock removed from portfolio"
+        description: `${symbol} removed from portfolio`
       });
     } catch (error) {
       toast({
@@ -73,22 +73,90 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
     }
   };
 
+  const getCompanyLogo = (symbol: string) => {
+    // Using real company logo URLs for major companies
+    const logoMap: { [key: string]: string } = {
+      'AAPL': 'https://logo.clearbit.com/apple.com',
+      'MSFT': 'https://logo.clearbit.com/microsoft.com',
+      'GOOGL': 'https://logo.clearbit.com/google.com',
+      'GOOG': 'https://logo.clearbit.com/google.com',
+      'AMZN': 'https://logo.clearbit.com/amazon.com',
+      'TSLA': 'https://logo.clearbit.com/tesla.com',
+      'META': 'https://logo.clearbit.com/meta.com',
+      'NVDA': 'https://logo.clearbit.com/nvidia.com',
+      'NFLX': 'https://logo.clearbit.com/netflix.com',
+      'SPOT': 'https://logo.clearbit.com/spotify.com',
+      'GME': 'https://logo.clearbit.com/gamestop.com',
+      'JPM': 'https://logo.clearbit.com/jpmorganchase.com',
+      'NKE': 'https://logo.clearbit.com/nike.com',
+      'V': 'https://logo.clearbit.com/visa.com',
+      'MA': 'https://logo.clearbit.com/mastercard.com',
+      'DIS': 'https://logo.clearbit.com/disney.com',
+      'PYPL': 'https://logo.clearbit.com/paypal.com',
+      'ADBE': 'https://logo.clearbit.com/adobe.com',
+      'CRM': 'https://logo.clearbit.com/salesforce.com',
+      'INTC': 'https://logo.clearbit.com/intel.com',
+      'AMD': 'https://logo.clearbit.com/amd.com',
+      'COIN': 'https://logo.clearbit.com/coinbase.com',
+      'SQ': 'https://logo.clearbit.com/squareup.com',
+      'UBER': 'https://logo.clearbit.com/uber.com',
+      'LYFT': 'https://logo.clearbit.com/lyft.com',
+      'TWTR': 'https://logo.clearbit.com/twitter.com',
+      'SNAP': 'https://logo.clearbit.com/snap.com',
+      'PINS': 'https://logo.clearbit.com/pinterest.com',
+      'ROKU': 'https://logo.clearbit.com/roku.com',
+      'ZM': 'https://logo.clearbit.com/zoom.us',
+      'SHOP': 'https://logo.clearbit.com/shopify.com',
+      'DDOG': 'https://logo.clearbit.com/datadoghq.com',
+      'SNOW': 'https://logo.clearbit.com/snowflake.com',
+      'PLTR': 'https://logo.clearbit.com/palantir.com',
+      'RBLX': 'https://logo.clearbit.com/roblox.com',
+      'HOOD': 'https://logo.clearbit.com/robinhood.com',
+      'PATH': 'https://logo.clearbit.com/uipath.com',
+      'DOCU': 'https://logo.clearbit.com/docusign.com',
+      'OKTA': 'https://logo.clearbit.com/okta.com',
+      'CRWD': 'https://logo.clearbit.com/crowdstrike.com'
+    };
+    
+    return logoMap[symbol.toUpperCase()] || `https://logo.clearbit.com/${symbol.toLowerCase()}.com`;
+  };
+
+  const getCompanyInitial = (symbol: string) => {
+    return symbol.charAt(0).toUpperCase();
+  };
+
+  const getGradientClass = (symbol: string) => {
+    const gradients = [
+      "from-blue-500 to-purple-600",
+      "from-green-500 to-teal-600", 
+      "from-red-500 to-pink-600",
+      "from-yellow-500 to-orange-600",
+      "from-purple-500 to-indigo-600"
+    ];
+    const index = symbol.length % gradients.length;
+    return gradients[index];
+  };
+
   const sortedHoldings = [...holdings].sort((a, b) => {
-    const valueA = a.totalValue;
-    const valueB = b.totalValue;
-    return sortOrder === 'desc' ? valueB - valueA : valueA - valueB;
+    const aValue = parseFloat(a.totalValue);
+    const bValue = parseFloat(b.totalValue);
+    return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
   });
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+  };
 
   if (isLoading) {
     return (
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <Card className="bg-dark-secondary border-gray-700">
         <CardHeader>
-          <CardTitle className="text-gray-900 dark:text-white">Portfolio Holdings</CardTitle>
+          <CardTitle className="text-xl font-semibold">Your Holdings</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full bg-gray-200 dark:bg-gray-700" />
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full bg-gray-700" />
             ))}
           </div>
         </CardContent>
@@ -97,143 +165,104 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
   }
 
   return (
-    <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-gray-900 dark:text-white">Portfolio Holdings</CardTitle>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Stock
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-            <DialogHeader>
-              <DialogTitle className="text-gray-900 dark:text-white">Add New Stock</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddHolding} className="space-y-4">
-              <div>
-                <Label htmlFor="symbol" className="text-gray-700 dark:text-gray-300">Stock Symbol</Label>
-                <Input
-                  id="symbol"
-                  value={newHolding.symbol}
-                  onChange={(e) => setNewHolding({ ...newHolding, symbol: e.target.value.toUpperCase() })}
-                  placeholder="AAPL"
-                  required
-                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Company Name</Label>
-                <Input
-                  id="name"
-                  value={newHolding.name}
-                  onChange={(e) => setNewHolding({ ...newHolding, name: e.target.value })}
-                  placeholder="Apple Inc."
-                  required
-                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="shares" className="text-gray-700 dark:text-gray-300">Number of Shares</Label>
-                <Input
-                  id="shares"
-                  type="number"
-                  step="0.0001"
-                  value={newHolding.shares}
-                  onChange={(e) => setNewHolding({ ...newHolding, shares: e.target.value })}
-                  placeholder="10"
-                  required
-                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="avgPrice" className="text-gray-700 dark:text-gray-300">Average Price</Label>
-                <Input
-                  id="avgPrice"
-                  type="number"
-                  step="0.01"
-                  value={newHolding.avgPrice}
-                  onChange={(e) => setNewHolding({ ...newHolding, avgPrice: e.target.value })}
-                  placeholder="150.00"
-                  required
-                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                />
-              </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                Add Stock
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+    <Card className="bg-dark-secondary border-gray-700 animate-fade-in">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl font-semibold">Your Holdings</CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-300 hover:text-white hover:bg-dark-tertiary"
+            onClick={toggleSort}
+          >
+            <ArrowUpDown className="h-4 w-4 mr-1" />
+            Sort {sortOrder === 'desc' ? '(High to Low)' : '(Low to High)'}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        {holdings.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">No stocks in your portfolio yet</p>
-            <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Stock
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">Stock</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">Shares</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">Avg Price</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">Current Price</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white cursor-pointer" onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
-                    <div className="flex items-center justify-end">
-                      Total Value
-                      <ArrowUpDown className="h-4 w-4 ml-1" />
-                    </div>
-                  </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">Gain/Loss</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedHoldings.map((holding) => (
-                  <tr key={holding.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="py-4 px-4">
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white">{holding.symbol}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{holding.name}</div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="text-left py-3 text-gray-400 font-medium">Symbol</th>
+                <th className="text-left py-3 text-gray-400 font-medium">Shares</th>
+                <th className="text-left py-3 text-gray-400 font-medium">Price</th>
+                <th className="text-left py-3 text-gray-400 font-medium">Change</th>
+                <th className="text-left py-3 text-gray-400 font-medium">Value</th>
+                <th className="text-left py-3 text-gray-400 font-medium">P&L</th>
+                <th className="text-left py-3 text-gray-400 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedHoldings.map((holding) => {
+                const gainLoss = parseFloat(holding.gainLoss);
+                const gainLossPercent = parseFloat(holding.gainLossPercent);
+                const isPositive = gainLoss >= 0;
+                
+                return (
+                  <tr key={holding.id} className="border-b border-gray-800 hover:bg-dark-tertiary/50 transition-colors">
+                    <td className="py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center">
+                          <img 
+                            src={getCompanyLogo(holding.symbol)} 
+                            alt={`${holding.symbol} logo`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              // Fallback to gradient background with initial
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.className = `w-8 h-8 bg-gradient-to-r ${getGradientClass(holding.symbol)} rounded-full flex items-center justify-center text-sm font-bold`;
+                                parent.innerHTML = getCompanyInitial(holding.symbol);
+                              }
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium">{holding.symbol}</p>
+                          <p className="text-gray-400 text-sm">{holding.name}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="text-right py-4 px-4 text-gray-900 dark:text-white">{holding.shares}</td>
-                    <td className="text-right py-4 px-4 text-gray-900 dark:text-white">${holding.avgPrice.toFixed(2)}</td>
-                    <td className="text-right py-4 px-4 text-gray-900 dark:text-white">${holding.currentPrice.toFixed(2)}</td>
-                    <td className="text-right py-4 px-4 font-semibold text-gray-900 dark:text-white">${holding.totalValue.toFixed(2)}</td>
-                    <td className="text-right py-4 px-4">
-                      <div className="flex flex-col items-end">
-                        <span className={`font-semibold ${holding.gainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {holding.gainLoss >= 0 ? '+' : ''}${holding.gainLoss.toFixed(2)}
-                        </span>
-                        <Badge variant={holding.gainLoss >= 0 ? "default" : "destructive"} className="text-xs">
-                          {holding.gainLoss >= 0 ? '+' : ''}{holding.gainLossPercent.toFixed(2)}%
-                        </Badge>
-                      </div>
+                    <td className="py-4 font-mono">{parseFloat(holding.shares).toFixed(4)}</td>
+                    <td className="py-4 font-mono">${parseFloat(holding.currentPrice).toFixed(2)}</td>
+                    <td className="py-4">
+                      <span className={`font-mono ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                        {isPositive ? '+' : ''}${gainLoss.toFixed(2)} ({gainLossPercent.toFixed(2)}%)
+                      </span>
                     </td>
-                    <td className="text-right py-4 px-4">
+                    <td className="py-4 font-mono">${parseFloat(holding.totalValue).toFixed(2)}</td>
+                    <td className="py-4">
+                      <span className={`font-mono ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                        {isPositive ? '+' : ''}${gainLoss.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="py-4">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteHolding(holding.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                        onClick={() => handleDeleteHolding(holding.id, holding.symbol)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                        disabled={deleteHolding.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                );
+              })}
+            </tbody>
+          </table>
+          
+          {holdings.length === 0 && (
+            <div className="text-center py-8 text-gray-400">
+              <p>No holdings found.</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

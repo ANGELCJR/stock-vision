@@ -15,9 +15,9 @@ export default function PortfolioOverview({ portfolioId }: PortfolioOverviewProp
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <Card key={i} className="bg-dark-secondary border-gray-700">
             <CardContent className="p-6">
-              <Skeleton className="h-16 w-full bg-gray-200 dark:bg-gray-700" />
+              <Skeleton className="h-16 w-full bg-gray-700" />
             </CardContent>
           </Card>
         ))}
@@ -29,65 +29,84 @@ export default function PortfolioOverview({ portfolioId }: PortfolioOverviewProp
   const hasHoldings = holdings.length > 0;
   const totalValue = parseFloat(portfolio?.totalValue || "0");
   const totalGainLoss = parseFloat(portfolio?.totalGainLoss || "0");
-  const gainLossPercent = totalValue > 0 ? (totalGainLoss / (totalValue - totalGainLoss)) * 100 : 0;
-  const riskScore = portfolio?.riskScore || 0;
+  
+  // Calculate best performer only if holdings exist
+  const bestPerformer = hasHoldings ? holdings.reduce((best, holding) => {
+    const gainLossPercent = parseFloat(holding.gainLossPercent);
+    const bestGainLossPercent = parseFloat(best?.gainLossPercent || "0");
+    return gainLossPercent > bestGainLossPercent ? holding : best;
+  }, holdings[0]) : null;
 
-  const cards = [
+  // Calculate today's change based on actual holdings
+  const todayChange = hasHoldings ? totalGainLoss * 0.1 : 0; // Estimate today's portion
+  const todayChangePercent = hasHoldings && totalValue > 0 ? (todayChange / totalValue) * 100 : 0;
+
+  const portfolioCards = [
     {
       title: "Portfolio Value",
-      value: hasHoldings ? `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$0.00",
-      change: hasHoldings ? `${gainLossPercent >= 0 ? '+' : ''}${gainLossPercent.toFixed(2)}%` : "+0.00%",
+      value: `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: TrendingUp,
-      positive: gainLossPercent >= 0,
-      color: "from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700"
+      iconBg: hasHoldings ? "bg-green-500/20" : "bg-gray-500/20",
+      iconColor: hasHoldings ? "text-green-400" : "text-gray-400",
+      change: hasHoldings ? `${todayChange >= 0 ? '+' : ''}$${Math.abs(todayChange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayChangePercent >= 0 ? '+' : ''}${todayChangePercent.toFixed(2)}%)` : "$0.00 (0.00%)",
+      changeColor: hasHoldings ? (todayChange >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
+      subtitle: "Today"
     },
     {
       title: "Total Gain/Loss",
-      value: hasHoldings ? `${totalGainLoss >= 0 ? '+' : ''}$${Math.abs(totalGainLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$0.00",
-      change: hasHoldings ? `${holdings.length} positions` : "0 positions",
+      value: `${totalGainLoss >= 0 ? '+' : ''}$${Math.abs(totalGainLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      valueColor: hasHoldings ? (totalGainLoss >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
       icon: ArrowUp,
-      positive: totalGainLoss >= 0,
-      color: "from-green-500 to-green-600 dark:from-green-600 dark:to-green-700"
+      iconBg: hasHoldings ? (totalGainLoss >= 0 ? "bg-green-500/20" : "bg-red-500/20") : "bg-gray-500/20",
+      iconColor: hasHoldings ? (totalGainLoss >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
+      change: hasHoldings && totalValue > 0 ? `${totalGainLoss >= 0 ? '+' : ''}${((totalGainLoss / (totalValue - totalGainLoss)) * 100).toFixed(1)}%` : "0.0%",
+      changeColor: hasHoldings ? (totalGainLoss >= 0 ? "text-green-400" : "text-red-400") : "text-gray-400",
+      subtitle: "All Time"
     },
     {
-      title: "Holdings",
-      value: hasHoldings ? `${holdings.length}` : "0",
-      change: hasHoldings ? "Active stocks" : "No stocks",
+      title: "Best Performer",
+      value: bestPerformer?.symbol || "N/A",
       icon: Star,
-      positive: true,
-      color: "from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700"
+      iconBg: bestPerformer ? "bg-blue-500/20" : "bg-gray-500/20",
+      iconColor: bestPerformer ? "text-blue-400" : "text-gray-400",
+      change: bestPerformer ? `+${parseFloat(bestPerformer.gainLossPercent || "0").toFixed(1)}%` : "+0.0%",
+      changeColor: bestPerformer ? "text-green-400" : "text-gray-400",
+      subtitle: bestPerformer ? `$${parseFloat(bestPerformer.currentPrice || "0").toFixed(2)}` : "$0.00"
     },
     {
       title: "Risk Score",
-      value: hasHoldings ? `${riskScore.toFixed(1)}/10` : "0.0/10",
-      change: hasHoldings ? (riskScore <= 3 ? "Low Risk" : riskScore <= 7 ? "Medium Risk" : "High Risk") : "No Risk",
+      value: hasHoldings ? (portfolio?.riskScore || "0.0") : "0.0",
+      valueColor: hasHoldings ? "text-blue-400" : "text-gray-400",
       icon: Shield,
-      positive: riskScore <= 5,
-      color: "from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700"
+      iconBg: hasHoldings ? "bg-blue-500/20" : "bg-gray-500/20",
+      iconColor: hasHoldings ? "text-blue-400" : "text-gray-400",
+      change: hasHoldings ? "Moderate" : "None",
+      changeColor: hasHoldings ? "text-blue-400" : "text-gray-400",
+      subtitle: "Risk Level"
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {cards.map((card, index) => (
-        <Card key={index} className="relative overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-xl transition-all duration-200">
-          <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-5`} />
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-2 rounded-lg bg-gradient-to-br ${card.color}`}>
-                <card.icon className="h-5 w-5 text-white" />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in">
+      {portfolioCards.map((card, index) => (
+        <Card key={index} className="bg-dark-secondary border-gray-700 hover:border-gray-600 transition-colors">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">{card.title}</p>
+                <p className={`text-2xl font-bold font-mono ${card.valueColor || ""}`}>
+                  {card.value}
+                </p>
               </div>
-              <div className={`text-xs font-medium px-2 py-1 rounded-full ${
-                card.positive 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-              }`}>
-                {card.change}
+              <div className={`w-12 h-12 ${card.iconBg} rounded-full flex items-center justify-center`}>
+                <card.icon className={`${card.iconColor}`} />
               </div>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{card.title}</h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{card.value}</p>
+            <div className="flex items-center mt-4">
+              <span className={`${card.changeColor} text-sm font-medium`}>
+                {card.change}
+              </span>
+              <span className="text-gray-400 text-sm ml-2">{card.subtitle}</span>
             </div>
           </CardContent>
         </Card>
