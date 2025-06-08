@@ -148,8 +148,15 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
           {/* Add New Stock Dialog */}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
+              <Button className="w-full py-3 transition-colors flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4" />
+                <span>Add New Stock</span>
+              </Button>
             </DialogTrigger>
             <DialogContent className="bg-dark-secondary border-gray-700">
+              <DialogHeader>
+                <DialogTitle>Add New Stock</DialogTitle>
+              </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="symbol">Symbol</Label>
