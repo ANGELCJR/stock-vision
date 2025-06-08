@@ -3,11 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowUpDown, Plus, Trash2 } from "lucide-react";
-import { useHoldings, useAddHolding, useDeleteHolding } from "@/hooks/usePortfolio";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArrowUpDown, Trash2 } from "lucide-react";
+import { useHoldings, useDeleteHolding } from "@/hooks/usePortfolio";
 import { useToast } from "@/hooks/use-toast";
 
 interface HoldingsTableProps {
@@ -16,40 +13,10 @@ interface HoldingsTableProps {
 
 export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
   const { data: holdings = [], isLoading } = useHoldings(portfolioId);
-  const addHolding = useAddHolding();
   const deleteHolding = useDeleteHolding();
   const { toast } = useToast();
   
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [newHolding, setNewHolding] = useState({
-    symbol: "",
-    name: "",
-    shares: "",
-    avgPrice: ""
-  });
-
-  const handleAddHolding = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await addHolding.mutateAsync({
-        portfolioId,
-        ...newHolding
-      });
-      setIsAddDialogOpen(false);
-      setNewHolding({ symbol: "", name: "", shares: "", avgPrice: "" });
-      toast({
-        title: "Success",
-        description: "Stock added to portfolio successfully"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add stock to portfolio",
-        variant: "destructive"
-      });
-    }
-  };
 
   const handleDeleteHolding = async (holdingId: number, symbol: string) => {
     try {
@@ -163,87 +130,15 @@ export default function HoldingsTable({ portfolioId }: HoldingsTableProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold">Your Holdings</CardTitle>
-          <div className="flex space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-gray-300 hover:text-white hover:bg-dark-tertiary"
-              onClick={toggleSort}
-            >
-              <ArrowUpDown className="h-4 w-4 mr-1" />
-              Sort {sortOrder === 'desc' ? '(High to Low)' : '(Low to High)'}
-            </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Stock
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-dark-secondary border-gray-700">
-                <DialogHeader>
-                  <DialogTitle>Add New Stock</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleAddHolding} className="space-y-4">
-                  <div>
-                    <Label htmlFor="symbol">Symbol</Label>
-                    <Input
-                      id="symbol"
-                      value={newHolding.symbol}
-                      onChange={(e) => setNewHolding({ ...newHolding, symbol: e.target.value.toUpperCase() })}
-                      placeholder="AAPL"
-                      className="bg-dark-tertiary border-gray-600"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="name">Company Name</Label>
-                    <Input
-                      id="name"
-                      value={newHolding.name}
-                      onChange={(e) => setNewHolding({ ...newHolding, name: e.target.value })}
-                      placeholder="Apple Inc."
-                      className="bg-dark-tertiary border-gray-600"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="shares">Shares</Label>
-                    <Input
-                      id="shares"
-                      type="number"
-                      step="0.0001"
-                      value={newHolding.shares}
-                      onChange={(e) => setNewHolding({ ...newHolding, shares: e.target.value })}
-                      placeholder="100"
-                      className="bg-dark-tertiary border-gray-600"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="avgPrice">Average Price</Label>
-                    <Input
-                      id="avgPrice"
-                      type="number"
-                      step="0.01"
-                      value={newHolding.avgPrice}
-                      onChange={(e) => setNewHolding({ ...newHolding, avgPrice: e.target.value })}
-                      placeholder="150.00"
-                      className="bg-dark-tertiary border-gray-600"
-                      required
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    disabled={addHolding.isPending}
-                  >
-                    {addHolding.isPending ? "Adding..." : "Add Stock"}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-300 hover:text-white hover:bg-dark-tertiary"
+            onClick={toggleSort}
+          >
+            <ArrowUpDown className="h-4 w-4 mr-1" />
+            Sort {sortOrder === 'desc' ? '(High to Low)' : '(Low to High)'}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
