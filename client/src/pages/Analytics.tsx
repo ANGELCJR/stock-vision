@@ -88,7 +88,7 @@ export default function Analytics() {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-dark-primary text-white">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -298,16 +298,20 @@ export default function Analytics() {
                       <div key={index} className="p-3 bg-muted dark:bg-dark-tertiary rounded-lg">
                         <div className="flex justify-between items-center mb-2">
                           <span className="font-medium text-slate-900 dark:text-foreground">{sector.sector}</span>
-                          <span className={`font-mono ${sector.contribution >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {sector.contribution >= 0 ? '+' : ''}{sector.contribution.toFixed(2)}%
-                          </span>
+                          <span className="text-sm text-slate-500 dark:text-muted-foreground">{sector.weight.toFixed(1)}%</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-slate-600 dark:text-muted-foreground">Weight: {sector.weight.toFixed(1)}%</p>
+                            <p className="text-slate-500 dark:text-muted-foreground">Performance</p>
+                            <p className={`font-mono ${sector.performance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {sector.performance >= 0 ? '+' : ''}{sector.performance.toFixed(1)}%
+                            </p>
                           </div>
                           <div>
-                            <p className="text-slate-600 dark:text-muted-foreground">Performance: {sector.performance.toFixed(1)}%</p>
+                            <p className="text-slate-500 dark:text-muted-foreground">Contribution</p>
+                            <p className={`font-mono ${sector.contribution >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {sector.contribution >= 0 ? '+' : ''}{sector.contribution.toFixed(1)}%
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -319,18 +323,70 @@ export default function Analytics() {
           </TabsContent>
 
           <TabsContent value="modeling" className="space-y-6">
+            {/* Correlation Matrix */}
+            <Card className="bg-card dark:bg-dark-secondary border-border">
+              <CardHeader>
+                <CardTitle className="text-slate-900 dark:text-foreground">Asset Correlation Matrix</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="text-left p-2 text-slate-500 dark:text-muted-foreground">Asset</th>
+                        {correlationData[0] && Object.keys(correlationData[0]).slice(1).map(key => (
+                          <th key={key} className="text-center p-2 text-slate-500 dark:text-muted-foreground font-mono">
+                            {key.toUpperCase()}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {correlationData.map((row, index) => (
+                        <tr key={index}>
+                          <td className="p-2 font-medium text-slate-900 dark:text-foreground">{row.asset}</td>
+                          {Object.entries(row).slice(1).map(([key, value]) => (
+                            <td key={key} className="text-center p-2">
+                              <span className={`font-mono px-2 py-1 rounded text-xs ${
+                                value === 1.00 ? 'bg-blue-500/20 text-blue-400' :
+                                value >= 0.7 ? 'bg-red-500/20 text-red-400' :
+                                value >= 0.5 ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>
+                                {value.toFixed(2)}
+                              </span>
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="optimization" className="space-y-6">
             {/* Efficient Frontier */}
             <Card className="bg-card dark:bg-dark-secondary border-border">
               <CardHeader>
-                <CardTitle className="text-slate-900 dark:text-foreground">Efficient Frontier Analysis</CardTitle>
+                <CardTitle className="text-slate-900 dark:text-foreground">Efficient Frontier</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart data={efficientFrontierData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="risk" stroke="#64748B" name="Risk %" />
-                      <YAxis dataKey="return" stroke="#64748B" name="Return %" />
+                      <XAxis 
+                        dataKey="risk" 
+                        stroke="#64748B"
+                        label={{ value: 'Risk (%)', position: 'insideBottom', offset: -5 }}
+                      />
+                      <YAxis 
+                        dataKey="return" 
+                        stroke="#64748B"
+                        label={{ value: 'Expected Return (%)', angle: -90, position: 'insideLeft' }}
+                      />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
@@ -339,67 +395,22 @@ export default function Analytics() {
                           color: 'hsl(var(--foreground))'
                         }}
                       />
-                      <Scatter dataKey="return" fill="#3B82F6" />
+                      <Scatter 
+                        dataKey="return" 
+                        fill={(entry) => entry.current ? '#EF4444' : '#3B82F6'}
+                      />
                     </ScatterChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="mt-4 text-sm text-slate-600 dark:text-muted-foreground">
-                  <p>Current portfolio positioned on the efficient frontier with optimal risk-return balance.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="optimization" className="space-y-6">
-            {/* Portfolio Optimization */}
-            <Card className="bg-card dark:bg-dark-secondary border-border">
-              <CardHeader>
-                <CardTitle className="text-slate-900 dark:text-foreground">Optimization Recommendations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-medium mb-4 text-slate-900 dark:text-foreground">Current vs Optimal Allocation</h4>
-                    <div className="space-y-4">
-                      <div className="p-3 bg-muted dark:bg-dark-tertiary rounded-lg">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-slate-900 dark:text-foreground">GME</span>
-                          <span className="text-green-400 text-sm">+18.1%</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-slate-500 dark:text-muted-foreground">Current: 100.0%</p>
-                          </div>
-                          <div>
-                            <p className="text-slate-500 dark:text-muted-foreground">Optimal: 118.1%</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-4 text-slate-900 dark:text-foreground">Risk-Return Optimization</h4>
-                    <div className="space-y-3">
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                        <div className="font-medium text-yellow-800 dark:text-yellow-200">Reduce Concentration</div>
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                          Decrease NVDA position from 31% to 24% to reduce single stock risk.
-                        </p>
-                      </div>
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <div className="font-medium text-blue-800 dark:text-blue-200">Add Defensive Assets</div>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                          Include 10% bonds or REITs to improve risk-adjusted returns.
-                        </p>
-                      </div>
-                      <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div className="font-medium text-green-800 dark:text-green-200">Sector Diversification</div>
-                        <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                          Add healthcare and energy exposure to reduce correlation.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="mt-4 p-3 bg-muted dark:bg-dark-tertiary rounded-lg">
+                  <p className="text-sm text-slate-600 dark:text-muted-foreground mb-2">
+                    <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                    Efficient portfolios
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-muted-foreground">
+                    <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                    Current portfolio position
+                  </p>
                 </div>
               </CardContent>
             </Card>

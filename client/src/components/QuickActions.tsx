@@ -112,8 +112,7 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
                     placeholder="Search by company name or symbol (e.g., Apple, AAPL)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-dark-tertiary border-gray-600"
-                  />
+                    className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400"                  />
                 </div>
                 
                 {/* Search Results */}

@@ -63,7 +63,7 @@ export default function News() {
   const filteredPortfolioNews = filterNews(portfolioNews);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-dark-primary text-white">
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -262,17 +262,11 @@ export default function News() {
                       </CardContent>
                     </Card>
                   ))
-                ) : holdings.length === 0 ? (
-                  <div className="text-center py-12">
-                    <TrendingUp className="h-12 w-12 text-slate-400 dark:text-muted-foreground mx-auto mb-4" />
-                    <p className="text-slate-600 dark:text-muted-foreground">No portfolio holdings found.</p>
-                    <p className="text-slate-500 dark:text-muted-foreground text-sm mt-2">Add stocks to your portfolio to see relevant news.</p>
-                  </div>
                 ) : (
                   <div className="text-center py-12">
-                    <Newspaper className="h-12 w-12 text-slate-400 dark:text-muted-foreground mx-auto mb-4" />
+                    <TrendingUp className="h-12 w-12 text-slate-400 dark:text-muted-foreground mx-auto mb-4" />
                     <p className="text-slate-600 dark:text-muted-foreground">No portfolio-related news found.</p>
-                    <p className="text-slate-500 dark:text-muted-foreground text-sm mt-2">Try adjusting your search or add more holdings.</p>
+                    <p className="text-slate-500 dark:text-muted-foreground text-sm mt-1">Add stocks to your portfolio to see relevant news.</p>
                   </div>
                 )}
               </TabsContent>
@@ -281,52 +275,38 @@ export default function News() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Trending Symbols */}
+            {/* Market Sentiment */}
             <Card className="bg-card dark:bg-dark-secondary border-border">
               <CardHeader>
-                <CardTitle className="text-lg text-slate-900 dark:text-foreground">Trending Symbols</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {['AAPL', 'NVDA', 'TSLA', 'GOOGL', 'MSFT'].map((symbol) => (
-                    <div key={symbol} className="flex items-center justify-between p-3 bg-muted dark:bg-dark-tertiary rounded-lg">
-                      <span className="font-medium text-slate-800 dark:text-foreground">{symbol}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-green-400">+2.4%</span>
-                        <TrendingUp className="h-4 w-4 text-green-400" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Market Summary */}
-            <Card className="bg-card dark:bg-dark-secondary border-border">
-              <CardHeader>
-                <CardTitle className="text-lg text-slate-900 dark:text-foreground">Market Summary</CardTitle>
+                <CardTitle className="text-lg text-slate-900 dark:text-foreground">Market Sentiment</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-muted-foreground">S&P 500</span>
-                    <div className="text-right">
-                      <div className="font-medium text-slate-800 dark:text-foreground">4,567.23</div>
-                      <div className="text-sm text-green-400">+1.2%</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-700 dark:text-muted-foreground">Bullish</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '68%' }}></div>
+                      </div>
+                      <span className="text-sm text-slate-800 dark:text-foreground font-mono">68%</span>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-muted-foreground">NASDAQ</span>
-                    <div className="text-right">
-                      <div className="font-medium text-slate-800 dark:text-foreground">14,234.56</div>
-                      <div className="text-sm text-green-400">+0.8%</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-700 dark:text-muted-foreground">Neutral</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '22%' }}></div>
+                      </div>
+                      <span className="text-sm text-slate-800 dark:text-foreground font-mono">22%</span>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-muted-foreground">Dow Jones</span>
-                    <div className="text-right">
-                      <div className="font-medium text-slate-800 dark:text-foreground">34,567.89</div>
-                      <div className="text-sm text-red-400">-0.3%</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-700 dark:text-muted-foreground">Bearish</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div className="bg-red-500 h-2 rounded-full" style={{ width: '10%' }}></div>
+                      </div>
+                      <span className="text-sm text-slate-800 dark:text-foreground font-mono">10%</span>
                     </div>
                   </div>
                 </div>
