@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Market news routes
+  // Market news routes - ENHANCED WITH AUTOMATIC FALLBACK
   app.get("/api/news", async (req, res) => {
     try {
       const symbols = req.query.symbols as string;
@@ -254,9 +254,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         news = await storage.getLatestMarketNews(limit);
       }
+
+      // If no news found, try to fetch fresh news from API
+      if (news.length === 0) {
+        console.log("No news in database, fetching from API...");
+        const freshNews = await fetchMarketNews();
+        if (freshNews.length > 0) {
+          // Store the fresh news
+          await Promise.all(
+            freshNews.map(article => storage.createMarketNews(article).catch(e => console.error("Error storing news:", e)))
+          );
+          // Return the fresh news
+          news = freshNews.map(article => ({
+            id: 0, // Will be assigned by database
+            ...article
+          }));
+        }
+      }
       
       res.json(news);
     } catch (error) {
+      console.error("Error in /api/news:", error);
       res.status(500).json({ error: "Failed to fetch market news" });
     }
   });

@@ -9,7 +9,7 @@ import {
   type PortfolioHistory, type InsertPortfolioHistory
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, gte } from "drizzle-orm";
+import { eq, desc, gte, lt } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -62,7 +62,11 @@ export class DatabaseStorage implements IStorage {
     try {
       // Check if data already exists
       const existingUser = await db.select().from(users).limit(1);
-      if (existingUser.length > 0) return;
+      if (existingUser.length > 0) {
+        // Initialize news fetching for existing data
+        await this.initializeNews();
+        return;
+      }
 
       // Create default user
       const [defaultUser] = await db.insert(users).values({
@@ -171,6 +175,9 @@ export class DatabaseStorage implements IStorage {
 
       await db.insert(marketNews).values(sampleNews);
 
+      // Initialize news fetching
+      await this.initializeNews();
+
       // Create sample AI insights
       const sampleInsights = [
         {
@@ -199,6 +206,37 @@ export class DatabaseStorage implements IStorage {
       await db.insert(aiInsights).values(sampleInsights);
     } catch (error) {
       console.error("Error initializing default data:", error);
+    }
+  }
+
+  private async initializeNews() {
+    try {
+      // Check if we have recent news (within last 4 hours)
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const recentNews = await db.select()
+        .from(marketNews)
+        .where(gte(marketNews.publishedAt, fourHoursAgo))
+        .limit(1);
+
+      if (recentNews.length === 0) {
+        console.log("Fetching fresh market news...");
+        const { fetchMarketNews } = await import("./services/newsService");
+        const freshNews = await fetchMarketNews();
+        
+        if (freshNews.length > 0) {
+          // Insert new news
+          for (const article of freshNews) {
+            try {
+              await this.createMarketNews(article);
+            } catch (err) {
+              console.error("Error inserting news article:", err);
+            }
+          }
+          console.log(`Stored ${freshNews.length} fresh news articles`);
+        }
+      }
+    } catch (error) {
+      console.error("Error initializing news:", error);
     }
   }
 
