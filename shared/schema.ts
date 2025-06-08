@@ -1,51 +1,28 @@
-import {
-  pgTable,
-  text,
-  varchar,
-  timestamp,
-  jsonb,
-  index,
-  serial,
-  decimal,
-  integer,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table for session-based authentication
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
-// User storage table for session-based users
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  fullName: text("full_name"),
+  email: text("email"),
+  phone: text("phone"),
+  location: text("location"),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Portfolios table linked to session users
 export const portfolios = pgTable("portfolios", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   name: text("name").notNull(),
-  totalValue: decimal("total_value", { precision: 12, scale: 2 }).notNull().default("0"),
-  totalGainLoss: decimal("total_gain_loss", { precision: 12, scale: 2 }).notNull().default("0"),
-  riskScore: decimal("risk_score", { precision: 3, scale: 1 }).notNull().default("0"),
+  totalValue: decimal("total_value", { precision: 12, scale: 2 }).notNull().default('0'),
+  totalGainLoss: decimal("total_gain_loss", { precision: 12, scale: 2 }).notNull().default('0'),
+  riskScore: decimal("risk_score", { precision: 3, scale: 1 }).notNull().default('0'),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Holdings table for individual stock positions
 export const holdings = pgTable("holdings", {
   id: serial("id").primaryKey(),
   portfolioId: integer("portfolio_id").notNull(),
@@ -53,15 +30,14 @@ export const holdings = pgTable("holdings", {
   name: text("name").notNull(),
   shares: decimal("shares", { precision: 12, scale: 4 }).notNull(),
   avgPrice: decimal("avg_price", { precision: 12, scale: 2 }).notNull(),
-  currentPrice: decimal("current_price", { precision: 12, scale: 2 }).notNull().default("0"),
-  totalValue: decimal("total_value", { precision: 12, scale: 2 }).notNull().default("0"),
-  gainLoss: decimal("gain_loss", { precision: 12, scale: 2 }).notNull().default("0"),
-  gainLossPercent: decimal("gain_loss_percent", { precision: 8, scale: 4 }).notNull().default("0"),
+  currentPrice: decimal("current_price", { precision: 12, scale: 2 }).notNull().default('0'),
+  totalValue: decimal("total_value", { precision: 12, scale: 2 }).notNull().default('0'),
+  gainLoss: decimal("gain_loss", { precision: 12, scale: 2 }).notNull().default('0'),
+  gainLossPercent: decimal("gain_loss_percent", { precision: 8, scale: 4 }).notNull().default('0'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Stock prices cache table
 export const stockPrices = pgTable("stock_prices", {
   id: serial("id").primaryKey(),
   symbol: text("symbol").notNull(),
@@ -72,30 +48,28 @@ export const stockPrices = pgTable("stock_prices", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
-// Analysis insights table
 export const aiInsights = pgTable("ai_insights", {
   id: serial("id").primaryKey(),
   portfolioId: integer("portfolio_id").notNull(),
-  type: text("type").notNull(),
+  type: text("type").notNull(), // 'opportunity', 'risk', 'trend'
   title: text("title").notNull(),
   description: text("description").notNull(),
   confidence: decimal("confidence", { precision: 3, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Market news table
 export const marketNews = pgTable("market_news", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   summary: text("summary").notNull(),
-  sentiment: text("sentiment").notNull(),
+  sentiment: text("sentiment").notNull(), // 'bullish', 'bearish', 'neutral'
   relevantSymbols: text("relevant_symbols").array(),
   source: text("source").notNull(),
   url: text("url").notNull(),
   publishedAt: timestamp("published_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Portfolio history for performance tracking
 export const portfolioHistory = pgTable("portfolio_history", {
   id: serial("id").primaryKey(),
   portfolioId: integer("portfolio_id").notNull(),
@@ -104,15 +78,10 @@ export const portfolioHistory = pgTable("portfolio_history", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
-// Zod schemas for validation
-export const insertUserSchema = createInsertSchema(users).omit({
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const upsertUserSchema = createInsertSchema(users).omit({
-  createdAt: true,
-  updatedAt: true,
+// Insert schemas
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
 });
 
 export const insertPortfolioSchema = createInsertSchema(portfolios).pick({
@@ -160,8 +129,7 @@ export const insertPortfolioHistorySchema = createInsertSchema(portfolioHistory)
   totalGainLoss: true,
 });
 
-// Type exports
-export type UpsertUser = z.infer<typeof upsertUserSchema>;
+// Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 

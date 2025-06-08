@@ -4,7 +4,7 @@ import { usePortfolio, useHoldings } from "@/hooks/usePortfolio";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PortfolioOverviewProps {
-  portfolioId?: number;
+  portfolioId: number;
 }
 
 export default function PortfolioOverview({ portfolioId }: PortfolioOverviewProps) {
@@ -76,12 +76,12 @@ export default function PortfolioOverview({ portfolioId }: PortfolioOverviewProp
     {
       title: "Risk Score",
       value: hasHoldings ? (portfolio?.riskScore || "0.0") : "0.0",
-      valueColor: hasHoldings ? "text-blue-400" : "text-gray-400",
+      valueColor: hasHoldings ? "text-yellow-400" : "text-gray-400",
       icon: Shield,
-      iconBg: hasHoldings ? "bg-blue-500/20" : "bg-gray-500/20",
-      iconColor: hasHoldings ? "text-blue-400" : "text-gray-400",
+      iconBg: hasHoldings ? "bg-yellow-500/20" : "bg-gray-500/20",
+      iconColor: hasHoldings ? "text-yellow-400" : "text-gray-400",
       change: hasHoldings ? "Moderate" : "None",
-      changeColor: hasHoldings ? "text-blue-400" : "text-gray-400",
+      changeColor: hasHoldings ? "text-yellow-400" : "text-gray-400",
       subtitle: "Risk Level"
     }
   ];

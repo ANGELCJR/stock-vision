@@ -1,29 +1,24 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`${res.status}: ${errorText}`);
+    const text = (await res.text()) || res.statusText;
+    throw new Error(`${res.status}: ${text}`);
   }
 }
 
 export async function apiRequest(
-  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
+  method: string,
   url: string,
-  body?: any
-) {
-  const config: RequestInit = {
+  data?: unknown | undefined,
+): Promise<Response> {
+  const res = await fetch(url, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
+    headers: data ? { "Content-Type": "application/json" } : {},
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
+  });
 
-  if (body) {
-    config.body = JSON.stringify(body);
-  }
-
-  const res = await fetch(url, config);
   await throwIfResNotOk(res);
   return res;
 }
@@ -31,27 +26,32 @@ export async function apiRequest(
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
-}) => ({ queryKey }: { queryKey: string[] }) => Promise<T | null> = ({
-  on401,
-}) => {
-  return async ({ queryKey }) => {
-    const res = await fetch(queryKey[0]);
-    if (res.status === 401) {
-      if (on401 === "returnNull") {
-        return null;
-      } else {
-        throw new Error("401: Unauthorized");
-      }
+}) => QueryFunction<T> =
+  ({ on401: unauthorizedBehavior }) =>
+  async ({ queryKey }) => {
+    const res = await fetch(queryKey[0] as string, {
+      credentials: "include",
+    });
+
+    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      return null;
     }
+
     await throwIfResNotOk(res);
-    return res.json();
+    return await res.json();
   };
-};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      staleTime: Infinity,
+      retry: false,
+    },
+    mutations: {
+      retry: false,
     },
   },
 });

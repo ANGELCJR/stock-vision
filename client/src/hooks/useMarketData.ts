@@ -1,38 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
+import type { StockData, HistoricalDataPoint, SearchResult } from "@/types";
 
 export function useStockData(symbol: string) {
-  return useQuery({
+  return useQuery<StockData>({
     queryKey: ["/api/stocks", symbol],
-    queryFn: async () => {
-      const response = await fetch(`/api/stocks/${symbol}`);
-      if (!response.ok) throw new Error("Failed to fetch stock data");
-      return response.json();
-    },
     enabled: !!symbol,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
 export function useStockHistory(symbol: string, period: string = "1d") {
-  return useQuery({
+  return useQuery<HistoricalDataPoint[]>({
     queryKey: ["/api/stocks", symbol, "history", period],
-    queryFn: async () => {
-      const response = await fetch(`/api/stocks/${symbol}/history?period=${period}`);
-      if (!response.ok) throw new Error("Failed to fetch stock history");
-      return response.json();
-    },
     enabled: !!symbol,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data) => data.map(point => ({
+      ...point,
+      timestamp: new Date(point.timestamp)
+    }))
   });
 }
 
 export function useStockSearch(query: string) {
-  return useQuery({
-    queryKey: ["/api/search/stocks", query],
-    queryFn: async () => {
-      if (!query || query.length < 1) return [];
-      const response = await fetch(`/api/search/stocks?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error("Failed to search stocks");
-      return response.json();
-    },
-    enabled: query.length > 0,
+  return useQuery<SearchResult[]>({
+    queryKey: [`/api/search?q=${encodeURIComponent(query)}`],
+    enabled: query.length >= 2,
+    staleTime: 10 * 60 * 1000, // 10 minutes
   });
 }
