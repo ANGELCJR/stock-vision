@@ -1,15 +1,13 @@
-import { Plus, Scale, Bell, FileText, Search } from "lucide-react";
+import { Scale, Bell, FileText, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useAddHolding, usePortfolio } from "@/hooks/usePortfolio";
 import { useStockSearch } from "@/hooks/useMarketData";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { queryClient } from "@/lib/queryClient";
 
 interface QuickActionsProps {
   portfolioId?: number;
@@ -17,74 +15,20 @@ interface QuickActionsProps {
 
 export default function QuickActions({ portfolioId }: QuickActionsProps) {
   const { toast } = useToast();
-  const { data: portfolio } = usePortfolio(portfolioId);
-  const addHoldingMutation = useAddHolding();
   const [, setLocation] = useLocation();
-
-  const actualPortfolioId = portfolioId || portfolio?.id;
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [formData, setFormData] = useState({
-    symbol: "",
-    companyName: "",
-    shares: "",
-    avgPrice: ""
-  });
 
   // Use the search hook
   const { data: searchResults = [], isLoading: isSearching } = useStockSearch(searchQuery);
 
-  const handleAddStock = async () => {
-    try {
-      if (!actualPortfolioId) {
-        throw new Error("No portfolio ID available");
-      }
-      await addHoldingMutation.mutateAsync({
-        portfolioId: actualPortfolioId,
-        symbol: formData.symbol.toUpperCase(),
-        name: formData.companyName || formData.symbol.toUpperCase(),
-        shares: formData.shares,
-        avgPrice: formData.avgPrice
-      });
-      
-      toast({
-        title: "Success",
-        description: `${formData.symbol.toUpperCase()} added to portfolio successfully.`
-      });
-      
-      setIsDialogOpen(false);
-      setFormData({ symbol: "", companyName: "", shares: "", avgPrice: "" });
-      
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["/api/portfolios"] });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add stock to portfolio.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleSelectStock = (stock: any) => {
-    setFormData({
-      ...formData,
-      symbol: stock.symbol,
-      companyName: stock.name
-    });
+  const handleStockClick = (symbol: string) => {
+    setLocation(`/stock/${symbol}`);
     setIsSearchDialogOpen(false);
-    setIsDialogOpen(true);
+    setSearchQuery("");
   };
 
   const quickActions = [
-    {
-      title: "Add Stock",
-      description: "Add a new stock to your portfolio",
-      icon: Plus,
-      action: () => setIsDialogOpen(true),
-      color: "from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700"
-    },
     {
       title: "Search Stocks",
       description: "Search from 50,000+ stocks",
@@ -137,64 +81,6 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
         </CardContent>
       </Card>
 
-      {/* Add Stock Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-white">Add Stock to Portfolio</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="symbol" className="text-gray-700 dark:text-gray-300">Stock Symbol</Label>
-              <Input
-                id="symbol"
-                value={formData.symbol}
-                onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
-                placeholder="AAPL"
-                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <Label htmlFor="companyName" className="text-gray-700 dark:text-gray-300">Company Name</Label>
-              <Input
-                id="companyName"
-                value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                placeholder="Apple Inc."
-                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <Label htmlFor="shares" className="text-gray-700 dark:text-gray-300">Number of Shares</Label>
-              <Input
-                id="shares"
-                type="number"
-                step="0.0001"
-                value={formData.shares}
-                onChange={(e) => setFormData({ ...formData, shares: e.target.value })}
-                placeholder="10"
-                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <Label htmlFor="avgPrice" className="text-gray-700 dark:text-gray-300">Purchase Price</Label>
-              <Input
-                id="avgPrice"
-                type="number"
-                step="0.01"
-                value={formData.avgPrice}
-                onChange={(e) => setFormData({ ...formData, avgPrice: e.target.value })}
-                placeholder="150.00"
-                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-              />
-            </div>
-            <Button onClick={handleAddStock} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-              Add Stock
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Stock Search Dialog */}
       <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
         <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -212,10 +98,11 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
               <p className="text-gray-500 dark:text-gray-400">Searching...</p>
             ) : searchResults.length > 0 ? (
               <div className="max-h-60 overflow-y-auto space-y-2">
+                <p className="text-sm text-gray-400 mb-2">Click on a stock to view details and purchase:</p>
                 {searchResults.map((stock: any, index: number) => (
                   <div
                     key={index}
-                    onClick={() => handleSelectStock(stock)}
+                    onClick={() => handleStockClick(stock.symbol)}
                     className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <div className="flex justify-between items-center">
@@ -223,7 +110,7 @@ export default function QuickActions({ portfolioId }: QuickActionsProps) {
                         <div className="font-semibold text-gray-900 dark:text-white">{stock.symbol}</div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">{stock.name}</div>
                       </div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500">{stock.exchange}</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500">Click to buy →</div>
                     </div>
                   </div>
                 ))}
